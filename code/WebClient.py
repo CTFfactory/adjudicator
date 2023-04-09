@@ -123,8 +123,12 @@ class WebClient(protocol.Protocol):
             sys.stderr.write("Job %s: Made connection to %s:%s\n" % (self.job_id, self.factory.get_ip(), self.factory.get_port()))
         else:
             sys.stderr.write("Made connection to %s:%s\n" % (self.factory.get_ip(), self.factory.get_port()))
-        #sys.stderr.write("Sending: %s\n" % self.request)
-        self.transport.write("%s\r\n" % self.request)
+        request_str = "".join(map(chr, self.request))
+        request_str += "\r\n"
+        sys.stderr.write(f"Sending: {request_str}\n")
+        print(type(request_str))
+        sys.stderr.flush()
+        self.transport.write(request_str.encode('utf-8'))
 
     def dataReceived(self, data):
         data_len = len(data)
