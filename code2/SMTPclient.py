@@ -20,7 +20,7 @@ class SMTPClient(protocol.Protocol):
 
     def no_unicode(self, text):
         #sys.stderr.write("\nJob %s: Converting %s" % (self.job_id, text))
-        if isinstance(text, str):
+        if isinstance(text, unicode):
             return text.encode('utf-8')
         else:
             return text
@@ -130,7 +130,7 @@ if __name__=="__main__":
     params = Parameters()
 
     def check_smtp(job):
-        print("Checking services for %s" % job.get_ip())
+        print "Checking services for %s" % job.get_ip()
         for service in job.get_services():
             factory = SMTPFactory(params, job, service)
             job.set_factory(factory)
@@ -144,4 +144,4 @@ if __name__=="__main__":
 
     reactor.callLater(30, reactor.stop)
     reactor.run()
-    print("Finished normally")
+    print "Finished normally"

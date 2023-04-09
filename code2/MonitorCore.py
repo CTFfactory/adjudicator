@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python2.7
 # requires:  https://pypi.python.org/pypi/http-parser
 from twisted.internet import reactor, protocol, ssl
 from http_parser.pyparser import HttpParser
@@ -121,7 +121,7 @@ class MonitorCore(object):
 
     def dns_pass(self, result, job, dnsobj):
         jobid = job.get_job_id()
-        print("Job %s:  DNS passed: %s" % (jobid, result))
+        print "Job %s:  DNS passed: %s" % (jobid, result)
         reactor.callLater(0.1, self.pinghost, job)
         dnsobj.close()
         del dnsobj

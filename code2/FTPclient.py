@@ -72,8 +72,8 @@ class FTP_client(object):
 
     def checkBuffer(self, result, bufferProtocol):
         found_data = bufferProtocol.buffer.getvalue()
-        print("Got:")
-        print(result)
+        print "Got:"
+        print result
         sys.stderr.write("Also got: |%s|\n" % found_data.strip("\r\n"))
         for content in self.service.get_contents():
             sys.stderr.write("Checking against: |%s|\n" % content.get_data())
@@ -118,7 +118,7 @@ class FTP_client(object):
         d.addErrback(self.fail)
 
     def check_content(self, result, ftpClient):
-        print(result)
+        print result
         proto = BufferingProtocol()
         # Get the current working directory
         ftpClient.pwd().addCallbacks(self.success, self.fail)
@@ -141,7 +141,7 @@ if __name__ == "__main__":
     from Jobs import Jobs
     import json
     def failFTP(failure, service, job_id):
-        print(failure)
+        print failure
         if "530 Login incorrect" in failure:
             sys.stderr.write("Job ID %s: Login failure\n" % job_id)
             service.fail_login()

@@ -69,14 +69,14 @@ class ScoreMachine(object):
                 old_online = self.last_check[team][host]["online"]
                 new_online = self.this_check[team][host]["online"]
                 if old_online != new_online:
-                    print(("INFO     %s changed: old %s | new %s | %s %s online state \n" %
-                        (now, old_online, new_online, team, host)))
+                    print("INFO     %s changed: old %s | new %s | %s %s online state \n" %
+                        (now, old_online, new_online, team, host))
                 for service_name in self.this_check[team][host]["services"]:
                     old_status = self.last_check[team][host]["services"][service_name]
                     new_status = self.this_check[team][host]["services"][service_name]
                     if old_status != new_status:
-                        print(("INFO     %s changed: old %s | new %s | %s %s service %s \n" %
-                            (now, old_status, new_status, team, host, service_name)))
+                        print("INFO     %s changed: old %s | new %s | %s %s service %s \n" %
+                            (now, old_status, new_status, team, host, service_name))
 
 if __name__ == "__main__":
     score_machine = ScoreMachine()

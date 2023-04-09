@@ -1,0 +1,107 @@
+[
+    {
+        "status": "job",
+        "game_id": 1,
+        "model": "scorebot.job",
+        "fields": {
+            "job_duration": 60,
+            "job_host": {
+                "ping_lost": 0,
+                "services": [
+                    {
+                        "protocol": "tcp",
+                        "auth": [{
+                            "username": "blueteam",
+                            "password": "orderlyTAKENangry8080",
+                            "login": ""
+                        }],
+                        "port": 21,
+                        "content": [{
+                            "filename": "scoring_file.txt",
+                            "data": "Gold team scoring file, do not touch!"
+                        }],
+                        "application": "ftp",
+                        "connect": "Unknown service ",
+                        "id": 41
+                    }
+                ],
+                "ping_received": 0,
+                "ip_address": "10.100.104.168",
+                "fqdn": "ftppub.delta.net"
+            },
+            "job_dns": [
+                "10.100.104.60"
+            ]
+        },
+        "pk": 5893
+    },
+    {
+        "status": "job",
+        "game_id": 1,
+        "model": "scorebot.job",
+        "fields": {
+            "job_duration": 60,
+            "job_host": {
+                "ping_lost": 0,
+                "services": [
+                    {
+                        "protocol": "tcp",
+                        "auth": [{
+                            "username": "blueteam",
+                            "password": "orderlyTAKENangry808",
+                            "login": ""
+                        }],
+                        "port": 21,
+                        "content": [{
+                            "filename": "scoring_file.txt",
+                            "data": "Gold Team scoring file, do not touch"
+                        }],
+                        "application": "ftp",
+                        "connect": "Unknown service ",
+                        "id": 41
+                    }
+                ],
+                "ping_received": 0,
+                "ip_address": "10.100.104.168",
+                "fqdn": "ftppub.delta.net"
+            },
+            "job_dns": [
+                "10.100.104.60"
+            ]
+        },
+        "pk": 5893
+    },
+    {
+        "status": "job",
+        "game_id": 1,
+        "model": "scorebot.job",
+        "fields": {
+            "job_duration": 60,
+            "job_host": {
+                "ping_lost": 0,
+                "services": [
+                    {
+                        "protocol": "tcp",
+                        "auth": [{
+                            "username": "blueteam",
+                            "password": "orderlyTAKENangry808",
+                            "login": ""
+                        }],
+                        "port": 21,
+                        "content": [],
+                        "application": "ftp",
+                        "connect": "Unknown service ",
+                        "id": 41
+                    }
+                ],
+                "ping_received": 0,
+                "ip_address": "10.100.104.72",
+                "fqdn": "www.delta.net"
+            },
+            "job_dns": [
+                "10.100.104.60"
+            ]
+        },
+        "pk": 5893
+    }
+]

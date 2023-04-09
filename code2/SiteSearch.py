@@ -185,13 +185,13 @@ class SiteSearch(threading.Thread):
                     dnsind = dnshn.find("/")
                     dnshn = dnshn[:dnsind]
             if self.__debug:
-                print(("Search[%s] Using dns server '%s' to find ip address for '%s'" %
-                      (self.baseurl, self.__dns, dnshn)))
+                print("Search[%s] Using dns server '%s' to find ip address for '%s'" %
+                      (self.baseurl, self.__dns, dnshn))
             self.__basehost = dnshn
             self.__ipaddr = dnslookup(dnshn, self.__dns)
             if self.__debug:
-                print(("Search[%s] Found IP '%s' for '%s'" %
-                      (self.baseurl, self.__ipaddr, dnshn)))
+                print("Search[%s] Found IP '%s' for '%s'" %
+                      (self.baseurl, self.__ipaddr, dnshn))
 
     """
         run
@@ -199,11 +199,11 @@ class SiteSearch(threading.Thread):
     """
     def run(self):
         if self.__debug:
-            print(("Search[%s] Starting up." % self.baseurl))
+            print("Search[%s] Starting up." % self.baseurl)
         # Check for login if provided
         if self.__loginparams and self.__loginpage:
             if self.__debug:
-                print(("Search[%s] Login page present, attempting to login." % self.baseurl))
+                print("Search[%s] Login page present, attempting to login." % self.baseurl)
             self.__loginintopage()
         # Loop while we have things to search
         while len(self.__search) > 0 and (self.__maxpages == 0 or len(self.pages) < self.__maxpages):
@@ -212,13 +212,13 @@ class SiteSearch(threading.Thread):
             #    print("Pages[%s] %d is max %d pages got!" %(self.baseurl, self.__maxpages, len(self.pages)))
             searchpage = self.__search.pop()
             if self.__debug:
-                print(("Search[%s] Popped out page '%s', '%d' left." % (self.baseurl, searchpage, len(self.__search))))
+                print("Search[%s] Popped out page '%s', '%d' left." % (self.baseurl, searchpage, len(self.__search)))
             # Check URL to make sure it is correct
             searchpage = self.__checkpageurl(searchpage)
             # If the URL has not been searched, poll the page
             if searchpage and not self.__isscanned(searchpage):
                 if self.__debug:
-                    print(("Search[%s] Page '%s' is ok to search! running.." % (self.baseurl, searchpage)))
+                    print("Search[%s] Page '%s' is ok to search! running.." % (self.baseurl, searchpage))
                 self.__pollpage(searchpage)
     """
         json
@@ -233,7 +233,7 @@ class SiteSearch(threading.Thread):
             ret["username"] = self.__loginparams[self.__loginusernamefm]
             ret["password"] = self.__loginparams[self.__loginpasswordfm]
         retarr = []
-        for page in list(self.pages.values()):
+        for page in self.pages.values():
             retarr.append(page.json())
         ret["pages"] = retarr
         return ret
@@ -245,7 +245,7 @@ class SiteSearch(threading.Thread):
         # Check login url
         lurl = self.__checkpageurl(self.__loginpage)
         if self.__debug:
-            print(("Search[%s] Trying login page '%s' with creds provided." % (self.baseurl, lurl)))
+            print("Search[%s] Trying login page '%s' with creds provided." % (self.baseurl, lurl))
         # Do login (or try to)
         if self.__ipaddr:
             lurl = lurl.replace(self.__basehost, self.__ipaddr)
@@ -256,7 +256,7 @@ class SiteSearch(threading.Thread):
             if self.__ipaddr:
                 lurl = lurl.replace(self.__ipaddr, self.__basehost)
             if self.__debug:
-                print(("Search[%s] [ERROR] Page '%s' failed to download (time out)!." % (self.baseurl, lurl)))
+                print("Search[%s] [ERROR] Page '%s' failed to download (time out)!." % (self.baseurl, lurl))
             self.__failed.append(lurl)
             return
         # Failure
@@ -264,7 +264,7 @@ class SiteSearch(threading.Thread):
             if self.__ipaddr:
                 lurl = lurl.replace(self.__ipaddr, self.__basehost)
             if self.__debug:
-                print(("Search[%s] [ERROR] Page '%s' failed to download (refused)!." % (self.baseurl, lurl)))
+                print("Search[%s] [ERROR] Page '%s' failed to download (refused)!." % (self.baseurl, lurl))
             self.__failed.append(lurl)
             return
         if self.__ipaddr:
@@ -272,19 +272,19 @@ class SiteSearch(threading.Thread):
         # No Data?
         if not loginpage:
             if self.__debug:
-                print(("Search[%s] [ERROR] Page '%s' failed to download!." % (self.baseurl, lurl)))
+                print("Search[%s] [ERROR] Page '%s' failed to download!." % (self.baseurl, lurl))
             self.__failed.append(lurl)
             return
         # Check for error codes
         if loginpage.status_code != 200:
             if self.__debug:
-                print(("Search[%s] [ERROR] Page '%s' failed by status code." % (self.baseurl, lurl)))
+                print("Search[%s] [ERROR] Page '%s' failed by status code." % (self.baseurl, lurl))
             self.__failed.append(lurl)
             return
         # Text only
         if not ("text" in loginpage.headers['content-type']):
             if self.__debug:
-                print(("Search[%s] [ERROR] Page '%s' is not a text file." % (self.baseurl, lurl)))
+                print("Search[%s] [ERROR] Page '%s' is not a text file." % (self.baseurl, lurl))
             self.__failed.append(lurl)
             return
         # Did teh request work?
@@ -293,7 +293,7 @@ class SiteSearch(threading.Thread):
                 cookie = "None"
                 if "Cookie" in loginpage.request.headers:
                     cookie = loginpage.request.headers["Cookie"]
-                print(("Search[%s] Login went through, cookie '%s' saved." % (self.baseurl, cookie)))
+                print("Search[%s] Login went through, cookie '%s' saved." % (self.baseurl, cookie))
             # Did we get a 200?
             if loginpage.status_code != 200:
                 return
@@ -305,7 +305,7 @@ class SiteSearch(threading.Thread):
             # create page object (check if form one exists first)
             pageobject = None
             if self.__debug:
-                print(("Search[%s] Page '%s' passed.." % (self.baseurl, lurl)))
+                print("Search[%s] Page '%s' passed.." % (self.baseurl, lurl))
             # Does page exist?
             if lurl in self.pages:
                 self.pages[lurl].size = len(loginpage.content)
@@ -333,11 +333,11 @@ class SiteSearch(threading.Thread):
         # check the url
         geturl = self.__checkpageurl(url)
         if self.__debug:
-            print(("Search[%s] Polling page '%s'." % (self.baseurl, geturl)))
+            print("Search[%s] Polling page '%s'." % (self.baseurl, geturl))
         # Out of scope
         if not geturl:
             if self.__debug:
-                print(("Search[%s] [ERROR] Page '%s' failed scope test." % (self.baseurl, geturl)))
+                print("Search[%s] [ERROR] Page '%s' failed scope test." % (self.baseurl, geturl))
             self.__failed.append(geturl)
             return
         if self.__ipaddr:
@@ -350,7 +350,7 @@ class SiteSearch(threading.Thread):
             if self.__ipaddr:
                 geturl = geturl.replace(self.__ipaddr, self.__basehost)
             if self.__debug:
-                print(("Search[%s] [ERROR] Page '%s' failed to download (time out)!." % (self.baseurl, geturl)))
+                print("Search[%s] [ERROR] Page '%s' failed to download (time out)!." % (self.baseurl, geturl))
             self.__failed.append(geturl)
             return
         # Refused
@@ -358,7 +358,7 @@ class SiteSearch(threading.Thread):
             if self.__ipaddr:
                 geturl = geturl.replace(self.__ipaddr, self.__basehost)
             if self.__debug:
-                print(("Search[%s] [ERROR] Page '%s' failed to download (refused)!." % (self.baseurl, geturl)))
+                print("Search[%s] [ERROR] Page '%s' failed to download (refused)!." % (self.baseurl, geturl))
             self.__failed.append(geturl)
             return
         if self.__ipaddr:
@@ -366,25 +366,25 @@ class SiteSearch(threading.Thread):
         # No Data?
         if not pagedata:
             if self.__debug:
-                print(("Search[%s] [ERROR] Page '%s' failed to download!." % (self.baseurl, geturl)))
+                print("Search[%s] [ERROR] Page '%s' failed to download!." % (self.baseurl, geturl))
             self.__failed.append(geturl)
             return
         # Check for error codes
         if pagedata.status_code != 200:
             if self.__debug:
-                print(("Search[%s] [ERROR] Page '%s' failed by status code." % (self.baseurl, geturl)))
+                print("Search[%s] [ERROR] Page '%s' failed by status code." % (self.baseurl, geturl))
             self.__failed.append(geturl)
             return
         # Text only
         if not ("text" in pagedata.headers['content-type']):
             if self.__debug:
-                print(("Search[%s] [ERROR] Page '%s' is not a text file." % (self.baseurl, geturl)))
+                print("Search[%s] [ERROR] Page '%s' is not a text file." % (self.baseurl, geturl))
             self.__failed.append(geturl)
             return
         # create page object (check if form one exists first)
         pageobject = None
         if self.__debug:
-            print(("Search[%s] Page '%s' passed.." % (self.baseurl, geturl)))
+            print("Search[%s] Page '%s' passed.." % (self.baseurl, geturl))
         # Check if we have a page object
         if geturl in self.pages:
             # If so update the current one
@@ -467,12 +467,12 @@ class SiteSearch(threading.Thread):
                     href = self.__checkpageurl(href)
                     if not href:
                         if self.__debug:
-                            print(("Search[%s] [ERROR] Link '%s' is not in scope!." % (self.baseurl, link.get("href"))))
+                            print("Search[%s] [ERROR] Link '%s' is not in scope!." % (self.baseurl, link.get("href")))
                     else:
                         # Not yet been searched, add to qeue
                         if not self.__isscanned(href):
                             if self.__debug:
-                                print(("Search[%s] Link '%s' added!." % (self.baseurl, href)))
+                                print("Search[%s] Link '%s' added!." % (self.baseurl, href))
                             self.__search.append(href)
         # Check for divs
         # Lets keep track of the text count to only grab the max
@@ -599,7 +599,7 @@ class JSONLoader(threading.Thread):
         while ssearch.isAlive():
             var = None
         # Post results
-        print(("Site '%s' Finished! %d results returned." % (self.__host, len(ssearch.pages))))
+        print("Site '%s' Finished! %d results returned." % (self.__host, len(ssearch.pages)))
         self.result = ssearch.json()
 
 
@@ -611,7 +611,7 @@ def dnslookup(name, dns_svr):
     # Do we have both
     if name and dns_svr:
             # Use PyDNS to lookup ip addr
-            print(("Testing %s with %s" % (name, dns_svr)))
+            print("Testing %s with %s" % (name, dns_svr))
             myres = dns.resolver.Resolver()
             myres.nameservers = [dns_svr]
             answer = myres.query(name)
@@ -636,14 +636,14 @@ def arethresddone(threads):
     Loads a CTF file, backs it up and adds the scanned entries and saves it back into the supplied json
 """
 def loadfromjson(jsonpath):
-    print(("Loading json file '%s'" % jsonpath))
+    print("Loading json file '%s'" % jsonpath)
     # Open the file
     jsonfile = open(jsonpath, "r")
     # JSON load the file
     jsondata = json.load(jsonfile)
     # Create a backup file
     jsonfilebk = open(("%s.bak" % jsonpath), "w")
-    print(("Creating backup at '%s" % ("%s.bak" % jsonpath)))
+    print("Creating backup at '%s" % ("%s.bak" % jsonpath))
     # Write the data to the backup
     json.dump(jsondata, jsonfilebk)
     # Close files
@@ -665,7 +665,7 @@ def loadfromjson(jsonpath):
                     # Add index
                     service["index"] = index
                     # Start and create threat
-                    print(("Qeueing search on '%s'" % hostname))
+                    print("Qeueing search on '%s'" % hostname)
                     content = None
                     if "content" in service:
                         content = service["content"]
@@ -695,7 +695,7 @@ def loadfromjson(jsonpath):
                             break
                     if "uri" in service:
                         service.pop("uri", None)
-    print(("Writing data to %s" % jsonpath))
+    print("Writing data to %s" % jsonpath)
     # Save data
     jsonout = open(jsonpath, "w")
     json.dump(jsondata, jsonout, indent=4)

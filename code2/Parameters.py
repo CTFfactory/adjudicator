@@ -10,8 +10,8 @@ class Parameters(object):
         self.timeout = 90
         # TODO read this from a file so its not exposed in repository
         # IDEA - configuration file??
-        self.sbe_auth = "7bff986e-e790-44a1-8c52-9ac29055c4e7"
-        self.sb_ip = "10.150.0.191"
+        self.sbe_auth = "2863e4ad-fcc5-4b35-8d31-42112c1c7b5b"
+        self.sb_ip = "10.150.100.81"
         self.sb_port = 80
         self.job_url = "/api/job"
         self.reason = ""

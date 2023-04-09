@@ -119,8 +119,8 @@ if __name__ == '__main__':
     #a.headers['SBE-AUTH'] = 'BBBBBBBBBBBBBBBBBBBBBBBBBBB' # auth key for a monitor with 2 assigned hosts (mailsvr, domain2)
     #a.headers['SBE-AUTH'] = 'CCCCCCCCCCCCCCCCCCCCCCCCCCC' # auth key for a monitor with 3 assigned hosts (filesvr, domain, mailsvr)
     url = 'http://10.200.100.50/job/'
-    print(url)
-    print(a.headers)
+    print url
+    print a.headers
 
     b = a.get(url)
     if b.status_code == 201:
@@ -129,7 +129,7 @@ if __name__ == '__main__':
         f.close()
         job_dict = json.loads(b.content.decode('utf-8'))
         job_instance = Job.from_json(job_dict)
-        print(('Job ID: %d' % job_instance.id))
+        print('Job ID: %d' % job_instance.id)
         print('Setting all to green!')
         for s in job_instance.host.services:
             s.set_status('green') # s.status = 2 would also work
@@ -139,11 +139,11 @@ if __name__ == '__main__':
         f.write(jdata)
         f.close()
         c = a.post('http://10.200.100.50/job/', data=jdata)
-        print(('Result: %d\n\n%s' % (c.status_code, c.content.decode('utf-8'))))
+        print('Result: %d\n\n%s' % (c.status_code, c.content.decode('utf-8')))
     elif b.status_code == 204:
         print('No Jobs avalible!')
     else:
-        print(('Error %d!' % b.status_code))
+        print('Error %d!' % b.status_code)
         print('Writing error to file [`pwd`\error.html]!')
         f = open('json-response.json', 'w')
         f.write(b.content.decode('utf-8'))

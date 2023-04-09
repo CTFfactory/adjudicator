@@ -1,5 +1,5 @@
 #!/usr/bin/python2
-from http.server import BaseHTTPRequestHandler, HTTPServer
+from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 from os import curdir, sep
 import random
 import cgi
@@ -39,8 +39,8 @@ class myHandler(BaseHTTPRequestHandler):
                 #self.which += 1
                 #if self.which > len(self.jsons):
                 #   self.which = 0
-                print("GET REQUEST FOR %s" % self.path)
-                print("SENT %s" % self.jsons[self.which])
+                print "GET REQUEST FOR %s" % self.path
+                print "SENT %s" % self.jsons[self.which]
                 #self.send_header('Content-type', mimetype)
                 #self.end_headers()
                 return
@@ -52,16 +52,16 @@ class myHandler(BaseHTTPRequestHandler):
     # Handler for the POST requests
     def do_POST(self):
         if self.path == "/job/":
-            print("POST DATA FOR %s" % self.path)
+            print "POST DATA FOR %s" % self.path
             data = self.rfile.read()
-            print("RECEIVED %s" % data)
+            print "RECEIVED %s" % data
             self.send_response(200)
             self.end_headers()
             return
         elif self.path == "/tickets/":
-            print("POST DATA FOR %s" % self.path)
+            print "POST DATA FOR %s" % self.path
             data = self.rfile.read()
-            print("RECEIVED %s" % data)
+            print "RECEIVED %s" % data
             self.send_response(200)
             self.end_headers()
             return
@@ -73,7 +73,7 @@ class myHandler(BaseHTTPRequestHandler):
                          'CONTENT_TYPE': self.headers['Content-Type'],
                          })
 
-            print(("Your name is: %s" % form["your_name"].value))
+            print ("Your name is: %s" % form["your_name"].value)
             self.send_response(200)
             self.end_headers()
             self.wfile.write("Thanks %s !" % form["your_name"].value)
@@ -84,7 +84,7 @@ try:
     # Create a web server and define the handler to manage the
     # incoming request
     server = HTTPServer(('', PORT_NUMBER), myHandler)
-    print(('Started httpserver on port ', PORT_NUMBER))
+    print ('Started httpserver on port ', PORT_NUMBER)
 
     # Wait forever for incoming htto requests
     server.serve_forever()

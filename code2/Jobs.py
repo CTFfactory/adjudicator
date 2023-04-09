@@ -334,7 +334,7 @@ class Service(object):
                         for page in pages:
                             self.contents.append(Content(page, self.job))
                     else:
-                        raise Exception ("Job %s: Unknown content type %s for job" % (self.job.get_job_id(), "|".join(list(self.json["content"]["content"].keys()))))
+                        raise Exception ("Job %s: Unknown content type %s for job" % (self.job.get_job_id(), "|".join(self.json["content"]["content"].keys())))
                 else:
                     raise Exception ("Job %s: Illegal content type in json" % self.job.get_job_id())
             else:
@@ -385,7 +385,7 @@ class Service(object):
             if self.json["content"]:
                 if "content" in self.json["content"]:
                     if "auth" in self.json["content"]["content"]:
-                        if list(self.json["content"]["content"]["auth"].keys()):
+                        if self.json["content"]["content"]["auth"].keys():
                             return True
                         else:
                             return False
@@ -828,48 +828,48 @@ if __name__ == "__main__":
     job_str = job.get_json_str()
     json_obj = json.loads(job_str)
     json_str = json.dumps(json_obj, indent=4)
-    print(json_str)
-    print("Job timeout: ", job.get_timeout())
-    print("Job service timeout: ", job.get_service_timeout())
-    print("Job ID: ", job.get_job_id())
-    print("Job DNS: ", job.get_dns())
-    print("Job FQDN: ", job.get_fqdn())
-    print("Job FQDN: ", job.get_hostname())
-    print("Setting IP 1.1.1.1")
+    print json_str
+    print "Job timeout: ", job.get_timeout()
+    print "Job service timeout: ", job.get_service_timeout()
+    print "Job ID: ", job.get_job_id()
+    print "Job DNS: ", job.get_dns()
+    print "Job FQDN: ", job.get_fqdn()
+    print "Job FQDN: ", job.get_hostname()
+    print "Setting IP 1.1.1.1"
     job.set_ip("1.1.1.1")
-    print("Job IP: ", job.get_ip())
-    print("Setting ping sent to 5")
+    print "Job IP: ", job.get_ip()
+    print "Setting ping sent to 5"
     job.set_ping_sent(5)
-    print("Job ping sent: ", job.get_ping_sent())
-    print("Setting ping respond to 3")
+    print "Job ping sent: ", job.get_ping_sent()
+    print "Setting ping respond to 3"
     job.set_ping_respond(3)
-    print("Job ping respond: ", job.get_ping_respond())
-    print("Is job done? ", job.is_done())
-    print("Processing services")
+    print "Job ping respond: ", job.get_ping_respond()
+    print "Is job done? ", job.is_done()
+    print "Processing services"
     for service in job.get_services():
-        print()
-        print("\tPort: %s/%s" % (service.get_port(), service.get_proto()))
-        print("\tApplication %s" % service.get_application())
-        print("\tChecking for auth: ", service.has_auth())
-        print("\t\tLogin URL: ", service.get_login_url())
-        print("\t\tUsername Field: ", service.get_username_field())
-        print("\t\tPassword Field: ", service.get_password_field())
-        print("\t\tUsername: ", service.get_username())
-        print("\t\tPassword: ", service.get_password())
-        print("\tTimeout: ", service.timeout("timeout"))
-        print("\tProcessing content")
+        print
+        print "\tPort: %s/%s" % (service.get_port(), service.get_proto())
+        print "\tApplication %s" % service.get_application()
+        print "\tChecking for auth: ", service.has_auth()
+        print "\t\tLogin URL: ", service.get_login_url()
+        print "\t\tUsername Field: ", service.get_username_field()
+        print "\t\tPassword Field: ", service.get_password_field()
+        print "\t\tUsername: ", service.get_username()
+        print "\t\tPassword: ", service.get_password()
+        print "\tTimeout: ", service.timeout("timeout")
+        print "\tProcessing content"
         for content in service.get_contents():
-            print()
-            print("\t\tVerb: ", content.get_verb())
-            print("\t\tURL: ", content.get_url())
-            print("\t\tFilename: ", content.get_filename())
-            print("\t\tData: ", content.get_data())
-            print("\t\tSetting reset ", content.reset())
-            print("\t\tSetting timeout ", content.timeout())
-            print("\t\tSetting success ", content.success())
-            print("\t\tSetting refused ", content.refused())
-            print("\t\tSetting invalid ", content.invalid())
-        print("\tSetting service status...")
+            print
+            print "\t\tVerb: ", content.get_verb()
+            print "\t\tURL: ", content.get_url()
+            print "\t\tFilename: ", content.get_filename()
+            print "\t\tData: ", content.get_data()
+            print "\t\tSetting reset ", content.reset()
+            print "\t\tSetting timeout ", content.timeout()
+            print "\t\tSetting success ", content.success()
+            print "\t\tSetting refused ", content.refused()
+            print "\t\tSetting invalid ", content.invalid()
+        print "\tSetting service status..."
         option = random.random()
         if option < .5:
             service.pass_conn()
@@ -881,8 +881,8 @@ if __name__ == "__main__":
             service.fail_conn("refused")
         else:
             service.fail_conn("foo")
-    print("Checking job completeness: ", job.is_done())
-    print(job.get_result_json_str())
+    print "Checking job completeness: ", job.is_done()
+    print job.get_result_json_str()
     done =  jobs.find_done_jobs()
     for job_id in done:
-        print(jobs.finish_job(job_id, "done"))
+        print jobs.finish_job(job_id, "done")

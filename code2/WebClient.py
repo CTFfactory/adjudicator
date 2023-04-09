@@ -109,7 +109,7 @@ class WebClient(protocol.Protocol):
 
     def no_unicode(self, text):
         #sys.stderr.write("\nJob %s: Converting %s" % (self.job_id, text))
-        if isinstance(text, str):
+        if isinstance(text, unicode):
             return text.encode('utf-8')
         else:
             return text
@@ -173,8 +173,8 @@ class WebClient(protocol.Protocol):
         if self.parser.is_partial_body():
             self.body += self.parser.recv_body()
             if self.factory.get_debug():
-                print("self.body:")
-                print(self.body)
+                print "self.body:"
+                print self.body
                 sys.stderr.write("Current self.body: %s\n" % self.body)
         # TODO - find a way to deal with this, SBE jobs currently don't trigger this check, but we need it for health checks
         if self.parser.is_message_complete():
@@ -453,7 +453,7 @@ class WebServiceCheckFactory(WebCoreFactory):
         sys.stdout.write("Job %s: Failed connect on content check with result %s:  %s/%s | %s\n" % \
                          (self.job.get_job_id(), failure, self.service.get_port(), self.service.get_proto(),
                           content.get_url))
-        print(failure)
+        print failure
         self.service.fail_conn()
 
     def content_pass(self, result, content):
@@ -468,7 +468,7 @@ class WebServiceCheckFactory(WebCoreFactory):
         sys.stdout.write("Job %s: Failed content integrity check with result %s:  %s/%s | %s\n" % \
                          (self.job.get_job_id(), failure, self.service.get_port(), self.service.get_proto(),
                           content.get_url()))
-        print(failure)
+        print failure
 
     def add_fail(self, reason):
         if "timeout" in reason:
@@ -540,11 +540,11 @@ if __name__ == "__main__":
         reactor.connectTCP(params.get_sb_ip(), params.get_sb_port(), factory, params.get_timeout())
 
     def check_web(result, params, job):
-        print("Got %s %s %s" % (result, params, job))
+        print "Got %s %s %s" % (result, params, job)
         check_web2(params, job)
 
     def check_web2(params, job):
-        print("Checking services for %s" % job.get_ip())
+        print "Checking services for %s" % job.get_ip()
         for service in job.get_services():
             factory = WebServiceCheckFactory(params, job, service)
             job.set_factory(factory)
@@ -552,14 +552,14 @@ if __name__ == "__main__":
 
     def dns_fail(failure, job):
         jobid = job.get_job_id()
-        print("DNS Failed for job %s! %s" % (jobid, failure))
+        print "DNS Failed for job %s! %s" % (jobid, failure)
         job.set_ip("fail")
         raise Exception("Fail Host")
 
     def job_fail(failure, job):
         jobid = job.get_job_id()
-        print("job %s Failed! %s" % (jobid, failure))
-        print(job.get_json_str())
+        print "job %s Failed! %s" % (jobid, failure)
+        print job.get_json_str()
         post_job(jobid)
         return True
 
@@ -596,5 +596,5 @@ if __name__ == "__main__":
         check_web2(params, job)
     reactor.callLater(30, reactor.stop)
     reactor.run()
-    print("Finished normally")
+    print "Finished normally"
 

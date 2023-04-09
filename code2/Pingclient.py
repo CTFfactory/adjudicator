@@ -56,12 +56,12 @@ if __name__=="__main__":
     syslog.startLogging()
     def check_services(result, pingobj):
         try:
-            print("Got %d good pings" % pingobj.get_recv())
-            print("Got %d bad pings" % pingobj.get_fail())
+            print "Got %d good pings" % pingobj.get_recv()
+            print "Got %d bad pings" % pingobj.get_fail()
         except:
             log.err()
     def ping_fail(failure):
-        print("It failed!!")
+        print "It failed!!"
     import sys
     ipaddr = sys.argv[1]
     count = str(5)

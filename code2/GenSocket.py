@@ -175,8 +175,8 @@ if __name__ == "__main__":
         reactor.connectTCP(params.get_sb_ip(), params.get_sb_port(), factory, params.get_timeout())
 
     def check_web(result, params, job):
-        print("Got %s %s %s" % (result, params, job))
-        print("Checking services for %s" % job.get_ip())
+        print "Got %s %s %s" % (result, params, job)
+        print "Checking services for %s" % job.get_ip()
         for service in job.get_services():
             factory = WebServiceCheckFactory(params, job, service)
             deferred = factory.get_deferred()
@@ -185,14 +185,14 @@ if __name__ == "__main__":
 
     def dns_fail(failure, job):
         jobid = job.get_job_id()
-        print("DNS Failed for job %s! %s" % (jobid, failure))
+        print "DNS Failed for job %s! %s" % (jobid, failure)
         job.set_ip("fail")
         raise Exception("Fail Host")
 
     def job_fail(failure, job):
         jobid = job.get_job_id()
-        print("job %s Failed! %s" % (jobid, failure))
-        print(job.get_json_str())
+        print "job %s Failed! %s" % (jobid, failure)
+        print job.get_json_str()
         post_job(jobid)
         return True
 
@@ -218,5 +218,5 @@ if __name__ == "__main__":
     reactor.callLater(5, check_job, params, jobs)
     reactor.callLater(30, reactor.stop)
     reactor.run()
-    print("Finished normally")
+    print "Finished normally"
 
