@@ -123,21 +123,25 @@ class WebClient(protocol.Protocol):
             sys.stderr.write("Job %s: Made connection to %s:%s\n" % (self.job_id, self.factory.get_ip(), self.factory.get_port()))
         else:
             sys.stderr.write("Made connection to %s:%s\n" % (self.factory.get_ip(), self.factory.get_port()))
-        request_str = "".join(map(chr, self.request))
-        request_str += "\r\n"
-        sys.stderr.write(f"Sending: {request_str}\n")
-        print(type(request_str))
+        self.stderr("Sending this content\r\n", self.request)
+        self.transport.write((self.request.decode('utf-8')+"\r\n").encode('utf-8'))
+
+    def stderr(self, message, data):
+        line = "="*80 + "\n"
+        sys.stderr.write(line)
+        sys.stderr.write(message)
+        sys.stderr.write("\n")
+        sys.stderr.write(data)
+        sys.stderr.write("\n")
+        sys.stderr.write(line)
         sys.stderr.flush()
-        self.transport.write(request_str.encode('utf-8'))
 
     def dataReceived(self, data):
+        self.stderr("Received this response: \n\t", data.decode('utf-8'))
+        self.stderr("of datatype", str(type(data.decode('utf-8'))))
         data_len = len(data)
-        self.recv += data
-        self.factory.add_data(data)
-        line = "="*80 + "\n"
-        #sys.stderr.write(line)
-        #sys.stderr.write("Received this response: \n\t%s\n" % self.recv)
-        #sys.stderr.write(line)
+        self.recv += data.decode('utf-8')
+        self.factory.add_data(data.decode('utf-8'))
         if self.factory.get_debug():
             sys.stderr.write( "Job %s: ConnID %s: Received:\n %s\n" % (self.job_id, self.factory.get_conn_id(), self.recv))
         self.parser.execute(data, data_len)
