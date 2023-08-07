@@ -27,7 +27,10 @@ class PingProtocol(protocol.ProcessProtocol):
         return self.d
 
     def outReceived(self, data):
-        self.data += data
+        if type(data) == type(b'a'):
+            self.data += data.decode('utf-8')+"\r\n"
+        else:
+            self.data += data
 
     def outConnectionLost(self):
         self.recv = int(self.received_re.search(self.data).group(1))

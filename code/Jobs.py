@@ -488,8 +488,13 @@ class Service(object):
     def set_data(self, data):
         today = time.strftime("%Y%m%d" ,time.gmtime())
         data_file = open("raw/%s_Job_%s_data" % (today, self.job.get_job_id()), "w")
+        if type(data) == type('a'):
+            data_file.write(data)
+            data = data.encode('utf-8')
+        else:
+            data_file.write(data.decode('utf-8'))
         self.json["content"] = base64.b64encode(data)
-        data_file.write(base64.b64encode(data))
+        #data_file.write(base64.b64encode(data))
         data_file.close()
 
     def get_url(self):

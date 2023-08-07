@@ -137,8 +137,10 @@ class WebClient(protocol.Protocol):
         sys.stderr.flush()
 
     def dataReceived(self, data):
-        self.stderr("Received this response: \n\t", data.decode('utf-8'))
-        self.stderr("of datatype", str(type(data.decode('utf-8'))))
+        sys.stderr.write("Dumping data contents: ")
+        print(data)
+        self.stderr("Received reponse of datatype ", str(type(data)))
+        self.stderr("\twith this content: \n\t", data.decode('utf-8'))
         data_len = len(data)
         self.recv += data.decode('utf-8')
         self.factory.add_data(data.decode('utf-8'))
@@ -247,7 +249,14 @@ class WebCoreFactory(GenCoreFactory):
         self.headers = headers
 
     def proc_body(self, body):
-        self.body += body
+        #sys.stderr.write("body: ")
+        #print(type(body))
+        #sys.stderr.write("self.body: ")
+        #print(type(self.body))
+        if type(body) == type(b'a'):
+            self.body += body.decode('utf-8')+"\r\n"
+        else:
+            self.body += body
 
     def get_url(self):
         return self.url
