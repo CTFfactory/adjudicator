@@ -71,7 +71,7 @@
                     },
                     "type": "files"
                 },
-                "port": 21
+                "port": 21,
                 "protocol": "tcp"
             },
             {

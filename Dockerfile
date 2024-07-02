@@ -13,7 +13,7 @@ ARG user
 ARG uid
 ARG gid
 
-ENV USERNAME $user
+ENV USERNAME=${user}
 RUN useradd -m $USERNAME && \
         echo "$USERNAME:$USERNAME" | chpasswd && \
         usermod --shell /bin/bash $USERNAME && \
@@ -45,6 +45,4 @@ RUN  /usr/bin/env python3 -m pip install -U pip --user && \
 ### Stage 2 
 WORKDIR /code/
 
-# NOTE: intentionally NOT using s6 init as the entrypoint
-# This would prevent container debugging if any of those service crash
 CMD ["/bin/bash", "/run.sh"]
