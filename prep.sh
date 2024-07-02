@@ -111,4 +111,4 @@ fi
 print_info "Building docker image"
 DOCKER_BUILDKIT=1 docker build --no-cache -t adjudicator-local:latest --build-arg user=${USERNAME} --build-arg uid=1000 --build-arg gid=1000 -f ./Dockerfile .
 print_good "Docker image was built; container should be running..."
-docker ps adjudicator-local:latest
+docker inspect adjudicator-local:latest
