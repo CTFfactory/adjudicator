@@ -9,21 +9,27 @@ COPY ./scripts/* /scripts/
 COPY ./requirements.txt /requirements.txt
 COPY ./docker /
 
+# Create environment variables and process arguments
 ARG user
 ARG uid
 ARG gid
-
 ENV USERNAME=${user}
-RUN useradd -m $USERNAME && \
-        echo "$USERNAME:$USERNAME" | chpasswd && \
+
+# Create user from args
+RUN useradd -m ${USERNAME} && \
+        echo "${USERNAME}:${USERNAME}" | chpasswd && \
         usermod --shell /bin/bash $USERNAME && \
         usermod  --uid $uid $USERNAME && \
         groupmod --gid $gid $USERNAME
 
+### Stage 2
+
+# Configure APT sources and updates
 RUN /bin/bash apt_config.sh && \
     /bin/bash apt_sources.sh && \
     /bin/bash security_updates.sh
 
+# Update system and install base packages
 RUN apt-get update && apt-get upgrade -y && \
     apt-get install -yqq \
       curl \
@@ -32,17 +38,22 @@ RUN apt-get update && apt-get upgrade -y && \
       python3 \
       python3-pip
 
+# Fix permissions
 RUN chmod 777 /run.sh
-RUN chown -R adjudicator:adjudicator /code/
-RUN chown -R adjudicator:adjudicator /scripts/
+RUN chown -R ${USERNAME}:${USERNAME} /code/
+RUN chown -R ${USERNAME}:${USERNAME} /scripts/
 
-# Overlay the root filesystem from this repo
+# Switch to created user
 USER ${user}
 
+# Upgrade PIP to newest version and install PYPI packages
 RUN  /usr/bin/env python3 -m pip install -U pip --user && \
      /usr/bin/env python3 -m pip install -Ur /requirements.txt --user
 
-### Stage 2 
+### Stage 3
+
+# Switch to working directory
 WORKDIR /code/
 
+# Run /run.sh to start adjudicator
 CMD ["/bin/bash", "/run.sh"]
