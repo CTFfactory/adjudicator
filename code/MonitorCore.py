@@ -169,8 +169,7 @@ class MonitorCore(object):
         port = service.get_port()
         jobid = job.get_job_id()
         service.fail_conn()
-        fail_str = service.data
-        sys.stderr.write("Job %s:  SSH %s/%s failed:\n\t%s\n%s\n" % (jobid, port, proto, failure, fail_str))
+        sys.stderr.write("Job %s:  SSH %s/%s failed:\n\t%s\n%s\n" % (jobid, port, proto, failure, sshobj.data))
         del sshobj
 
     def ftp_fail(self, failure, service, job_id):
