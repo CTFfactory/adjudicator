@@ -147,6 +147,29 @@ class MonitorCore(object):
         self.post_job(job)
         del pingobj
 
+    def ssh_host(self, job):
+        sshobj = SSHProtocol(job)
+        ssh_d = sshobj.getDeferred()
+        ssh_d.addCallback(self.ssh_pass, job, sshobj)
+        ssh_d.addErrback(self.ssh_fail, job, sshobj)
+        sshobj.connect()
+
+    def ssh_pass(self, result, job, sshobj, service):
+        jobid = job.get_job_id()
+        proto = service.get_proto()
+        port = service.get_port()
+        service.pass_conn()
+        sys.stderr.write("Job %s:  SSH (%s/%s) passed. %s\n" % (jobid, port, proto, result))
+        del sshobj
+
+    def ssh_fail(self, failure, job, sshobj, service):
+        service.fail_conn(failure)
+        proto = service.get_proto()
+        port = service.get_port()
+        jobid = job.get_job_id()
+        sys.stderr.write("Job %s:  SSH %s/%s failed:\n\t%s\n" % (jobid, port, proto, failure))
+        del sshobj
+
     def ftp_fail(self, failure, service, job_id):
         if "530 Login incorrect" in failure:
             sys.stderr.write("Job %s: Login failure\n" % job_id)
