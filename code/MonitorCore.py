@@ -8,6 +8,7 @@ from DNSclient import DNSclient
 from Pingclient import PingProtocol
 from FTPclient import FTP_client
 from SMTPclient import SMTPFactory
+from SSHclient import SSHProtocol
 from twisted.python import syslog
 #from twisted.python import log
 import traceback
@@ -196,6 +197,8 @@ class MonitorCore(object):
                     factory = SMTPFactory(self.params, job, service)
                     job.set_factory(factory)
                     factory.check_service()
+                elif service.get_application() == "ssh":
+                    self.ssh_host()
                 else:
                     factory = GenCheckFactory(self.params, job, service)
                     connector = reactor.connectTCP(job.get_ip(), service.get_port(), factory, self.params.get_timeout())
