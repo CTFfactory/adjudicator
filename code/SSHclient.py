@@ -9,7 +9,7 @@ import re
 class SSHProtocol(BaseProtocol):
 
     def __init__(self, job):
-        super().__init__(self, job)
+        super().__init__(job)
         self.success_re = re.compile("(SSH OK .*)")
         self.refused_re = re.compile("(.*Connection refused)")
         self.prog = "/usr/lib/nagios/plugins/check_ssh"
