@@ -33,8 +33,12 @@ class SSHProtocol(protocol.ProcessProtocol):
             self.data += data
 
     def outConnectionLost(self):
-        self.success = self.success_re.search(self.data).group()
-        self.fail = self.refused_re.search(self.data).group()
+        self.success_m = self.success_re.search(self.data)
+        self.failure_m = self.refused_re.search(self.data)
+        if self.success_m:
+            self.success = self.success_m.group()
+        if self.failure_m:
+            self.failure = self.failure_m.group()
         if self.success and not self.fail:
             self.d.callback(self)
         else:
