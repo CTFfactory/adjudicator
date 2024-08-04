@@ -160,13 +160,11 @@ class MonitorCore(object):
         proto = service.get_proto()
         port = service.get_port()
         service.pass_conn()
-        result_str = service.data
-        sys.stderr.write("Job %s:  SSH (%s/%s) passed. %s\nNagios result: %s" % (jobid, port, proto, result, result_str))
+        sys.stderr.write("Job %s:  SSH (%s/%s) passed. %s\nNagios result: %s" % (jobid, port, proto, result, sshobj.data))
         del sshobj
 
     def ssh_fail(self, failure, job, sshobj, service):
-        failure_str = sshobj.failure
-        service.fail_conn(failure_str)
+        service.fail_conn(sshobj.data)
         proto = service.get_proto()
         port = service.get_port()
         jobid = job.get_job_id()
