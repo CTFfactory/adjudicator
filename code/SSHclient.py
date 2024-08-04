@@ -2,7 +2,7 @@
 from twisted.internet import reactor
 from twisted.internet.defer import Deferred
 from Jobs import Jobs
-from BaseProtocol import BaseProtocol
+from BaseClient import BaseProtocol
 import sys
 import re
 
