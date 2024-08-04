@@ -21,7 +21,7 @@ class SSHProtocol(protocol.ProcessProtocol):
         self.count = count
 
     def connect(self):
-        reactor.spawnProcess(self, self.ssh_prog, [self.ping_prog, self.ipaddr])
+        reactor.spawnProcess(self, self.ssh_prog, [self.ssh_prog, self.ipaddr])
 
     def getDeferred(self):
         return self.d
