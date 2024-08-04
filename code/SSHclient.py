@@ -33,13 +33,9 @@ class SSHProtocol(protocol.ProcessProtocol):
             self.data += data
 
     def outConnectionLost(self):
-        self.recv = int(self.received_re.search(self.data).group(1))
-        self.trans = int(self.transmitted_re.search(self.data).group(1))
-        self.lost = self.trans - self.recv
-        self.job.set_ping_sent(self.trans)
-        self.job.set_ping_respond(self.recv)
-        self.ratio = self.recv / self.trans
-        if 0 <= self.ratio <= 100:
+        self.success = self.received_re.search(self.data).group()
+        self.fail = self.refused_re.search(self.data).group()
+        if self.success and not self.fail:
             self.d.callback(self)
         else:
             self.d.errback()
