@@ -20,7 +20,7 @@ class SSHProtocol(protocol.ProcessProtocol):
         self.ssh_prog = "/usr/lib/nagios/plugins/check_ssh"
         self.count = count
 
-    def ping(self):
+    def connect(self):
         reactor.spawnProcess(self, self.ssh_prog, [self.ping_prog, self.ipaddr])
 
     def getDeferred(self):
