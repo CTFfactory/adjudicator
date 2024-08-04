@@ -148,11 +148,11 @@ class MonitorCore(object):
         self.post_job(job)
         del pingobj
 
-    def ssh_host(self, job):
+    def ssh_host(self, job, service):
         sshobj = SSHProtocol(job)
         ssh_d = sshobj.getDeferred()
-        ssh_d.addCallback(self.ssh_pass, job, sshobj)
-        ssh_d.addErrback(self.ssh_fail, job, sshobj)
+        ssh_d.addCallback(self.ssh_pass, job, sshobj, service)
+        ssh_d.addErrback(self.ssh_fail, job, sshobj, service)
         sshobj.connect()
 
     def ssh_pass(self, result, job, sshobj, service):
@@ -201,7 +201,7 @@ class MonitorCore(object):
                     job.set_factory(factory)
                     factory.check_service()
                 elif service.get_application() == "ssh":
-                    self.ssh_host(job)
+                    self.ssh_host(job, service)
                 else:
                     factory = GenCheckFactory(self.params, job, service)
                     connector = reactor.connectTCP(job.get_ip(), service.get_port(), factory, self.params.get_timeout())
