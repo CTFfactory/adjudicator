@@ -9,6 +9,7 @@ from Pingclient import PingProtocol
 from FTPclient import FTP_client
 from SMTPclient import SMTPFactory
 from SSHclient import SSHProtocol
+from HTTPclient import HTTPProtocol
 from twisted.python import syslog
 #from twisted.python import log
 import traceback
