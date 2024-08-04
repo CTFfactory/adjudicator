@@ -198,7 +198,7 @@ class MonitorCore(object):
                     job.set_factory(factory)
                     factory.check_service()
                 elif service.get_application() == "ssh":
-                    self.ssh_host()
+                    self.ssh_host(job)
                 else:
                     factory = GenCheckFactory(self.params, job, service)
                     connector = reactor.connectTCP(job.get_ip(), service.get_port(), factory, self.params.get_timeout())
