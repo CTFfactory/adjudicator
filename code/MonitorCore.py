@@ -165,7 +165,8 @@ class MonitorCore(object):
         del sshobj
 
     def ssh_fail(self, failure, job, sshobj, service):
-        service.fail_conn(failure)
+        failure_str = sshobj.failure
+        service.fail_conn(failure_str)
         proto = service.get_proto()
         port = service.get_port()
         jobid = job.get_job_id()
