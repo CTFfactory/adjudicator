@@ -149,29 +149,28 @@ class MonitorCore(object):
         self.post_job(job)
         del pingobj
 
-    def ssh_host(self, job, service):
-        sshobj = SSHProtocol(job)
-        ssh_d = sshobj.getDeferred()
-        ssh_d.addCallback(self.ssh_pass, job, sshobj, service)
-        ssh_d.addErrback(self.ssh_fail, job, sshobj, service)
-        sshobj.connect()
+    def try_service(self, job, client_obj, service):
+        d = client_obj.getDeferred()
+        d.addCallback(self.service_pass, job, client_obj, service)
+        d.addErrback(self.service_fail, job, client_obj, service)
+        client_obj.connect()
 
-    def ssh_pass(self, result, job, sshobj, service):
+    def service_pass(self, result, job, client_obj, service):
         jobid = job.get_job_id()
         proto = service.get_proto()
         port = service.get_port()
         service.pass_conn()
         sys.stderr.write("Job %s:  SSH (%s/%s) passed. %s\nNagios result: %s" % (jobid, port, proto, result, sshobj.data))
-        del sshobj
+        del client_obj
 
-    def ssh_fail(self, failure, job, sshobj, service):
-        service.fail_conn(sshobj.data)
+    def service_fail(self, failure, job, client_obj, service):
+        service.fail_conn(client_obj.data)
         proto = service.get_proto()
         port = service.get_port()
         jobid = job.get_job_id()
         service.fail_conn()
-        sys.stderr.write("Job %s:  SSH %s/%s failed:\n\t%s\n%s\n" % (jobid, port, proto, failure, sshobj.data))
-        del sshobj
+        sys.stderr.write("Job %s:  SSH %s/%s failed:\n\t%s\n%s\n" % (jobid, port, proto, failure, client_obj.data))
+        del client_obj
 
     def ftp_fail(self, failure, service, job_id):
         if "530 Login incorrect" in failure:
@@ -200,7 +199,7 @@ class MonitorCore(object):
                     job.set_factory(factory)
                     factory.check_service()
                 elif service.get_application() == "ssh":
-                    self.ssh_host(job, service)
+                    self.try_service(job, SSHProtocol(job), service)
                 else:
                     factory = GenCheckFactory(self.params, job, service)
                     connector = reactor.connectTCP(job.get_ip(), service.get_port(), factory, self.params.get_timeout())
