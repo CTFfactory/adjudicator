@@ -168,7 +168,6 @@ class MonitorCore(object):
         proto = service.get_proto()
         port = service.get_port()
         jobid = job.get_job_id()
-        service.fail_conn()
         sys.stderr.write("Job %s:  SSH %s/%s failed:\n\t%s\n%s\n" % (jobid, port, proto, failure, client_obj.data))
         del client_obj
 
