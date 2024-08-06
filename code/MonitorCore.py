@@ -9,6 +9,7 @@ from Pingclient import PingProtocol
 from FTPclient import FTP_client
 from SMTPclient import SMTPFactory
 from SSHclient import SSHProtocol
+from MySQLclient import MySQLProtocol
 from HTTPclient import HTTPProtocol
 from twisted.python import syslog
 #from twisted.python import log
@@ -197,6 +198,8 @@ class MonitorCore(object):
                     factory = SMTPFactory(self.params, job, service)
                     job.set_factory(factory)
                     factory.check_service()
+                elif service.get_application() == "mysql":
+                    self.try_service(job, MySQLProtocol(job), service)
                 elif service.get_application() == "ssh":
                     self.try_service(job, SSHProtocol(job), service)
                 else:

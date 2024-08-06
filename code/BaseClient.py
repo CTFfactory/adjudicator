@@ -21,14 +21,20 @@ class BaseProtocol(protocol.ProcessProtocol):
     def getDeferred(self):
         return self.d
 
+    def outConnectionLost(self):
+        self.success_m = self.success_re.search(self.data)
+        self.failure_m = self.refused_re.search(self.data)
+        if self.success_m:
+            self.success = self.success_m.group()
+            self.d.callback(self)
+        else:
+            self.d.errback()
+
     def outReceived(self, data):
         if type(data) == type(b'a'):
             self.data += data.decode('utf-8')+"\r\n"
         else:
             self.data += data
-
-    def outConnectionLost(self):
-        raise Exception("subclass must override this function")
 
     def get_recv(self):
         return self.recv
