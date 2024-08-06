@@ -10,6 +10,6 @@ class MySQLProtocol(BaseProtocol):
 
     def __init__(self, job):
         super().__init__(job)
-        self.success_re = re.compile("(SSH OK .*)")
-        self.failure_re = re.compile("(.*Connection refused)")
+        self.success_re = re.compile("(Access denied for user.*)")
+        self.failure_re = re.compile("(Can't connect to MySQL server on.*)")
         self.prog = "/usr/lib/nagios/plugins/check_mysql"
