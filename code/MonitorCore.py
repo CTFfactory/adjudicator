@@ -30,13 +30,16 @@ class MonitorCore(object):
 
     def get_job(self):
         factory = JobFactory(self.params, self.jobs, "get")
+        sb_ip = self.params.get_sb_ip()
+        sb_port = self.params.get_sb_port()
+        timeout = self.params.get_timeout()
         if self.params.get_scheme() == "https":
             ssl_obj = ssl.CertificateOptions()
-            reactor.connectSSL(self.params.get_ip(), self.params.get_port(), factory, ssl_obj,\
-                                            self.params.get_timeout())
+            reactor.connectSSL(sb_ip, sb_port, factory, ssl_obj,\
+                                            timeout)
         elif self.params.get_scheme() == "http":
-            reactor.connectTCP(self.params.get_sb_ip(), self.params.get_sb_port(), factory, \
-                    self.params.get_timeout())
+            sys.stderr.write(f"Connecting to SB Core: {sb_ip}:{sb_port}, timeout is {timeout}")
+            reactor.connectTCP(sb_ip, sb_port, factory, timeout)
         else:
             raise Exception("Unknown scheme:  %s" % self.params.get_scheme())
         # Keep looking for more work
