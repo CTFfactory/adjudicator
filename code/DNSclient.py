@@ -20,8 +20,8 @@ class DNSclient(object):
 
     def query(self):
         #print "Querying %s for %s" % (self.dnssvr, self.fqdn)
-        sys.stderr.write("Job %s: starting DNS for FQDN %s using server %s\n" % (self.job_id, self.fqdn, self.dnssvr))
         dnssvr = self.dnssvrs.pop()
+        sys.stderr.write("Job %s: starting DNS for FQDN %s using server %s\n" % (self.job_id, self.fqdn, dnssvr))
         self.d = self.proto.query((dnssvr, 53), [dns.Query(self.fqdn, dns.A)], timeout=self.timeout)
         self.d.addCallback(self.getResults)
         return self.d
