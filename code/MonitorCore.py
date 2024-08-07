@@ -34,6 +34,7 @@ class MonitorCore(object):
         sb_port = self.params.get_sb_port()
         timeout = self.params.get_timeout()
         if self.params.get_scheme() == "https":
+            sys.stderr.write(f"Connecting to SB Core: {sb_ip}:{sb_port}, timeout is {timeout}")
             ssl_obj = ssl.CertificateOptions()
             reactor.connectSSL(sb_ip, sb_port, factory, ssl_obj,\
                                             timeout)
@@ -250,6 +251,7 @@ if __name__=="__main__":
         check_dir(dir)
     #log.startLogging(open('log/MonitorCore.log', 'w'))
     syslog.startLogging(prefix="Scorebot")
+    sys.stderr.write("Starting Adjudicator")
     params = Parameters()
     jobs = Jobs()
     mon_obj = MonitorCore(params, jobs)
