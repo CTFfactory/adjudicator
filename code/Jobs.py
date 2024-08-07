@@ -195,7 +195,7 @@ class Job(object):
         return json.dumps(self.get_result_json())
 
     def get_dns(self):
-        return self.json["dns"][0]
+        return self.json["dns"]
 
     def fail_dns(self):
         self.set_ping_respond(0)
