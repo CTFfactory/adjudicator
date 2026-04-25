@@ -4,6 +4,7 @@ from twisted.internet import reactor, protocol, ssl
 from twisted.names import dns
 from Jobs import Jobs
 import sys
+from logger import logger
 
 class DNSclient(object):
     # TODO - handle closing DNS connections properly!
@@ -19,7 +20,7 @@ class DNSclient(object):
 
     def query(self):
         #print "Querying %s for %s" % (self.dnssvr, self.fqdn)
-        sys.stderr.write("Job %s: starting DNS for FQDN %s using server %s\n" % (self.job_id, self.fqdn, self.dnssvr))
+        logger.info("Job %s: starting DNS for FQDN %s using server %s" % (self.job_id, self.fqdn, self.dnssvr))
         self.d = self.proto.query((self.dnssvr, 53), [dns.Query(self.fqdn, dns.A)], timeout=self.timeout)
         self.d.addCallback(self.getResults)
         return self.d
@@ -29,8 +30,7 @@ class DNSclient(object):
             answer_str = '%s' % res.answers[0].payload
             ip_addr = answer_str.split(" ")[1].split("=")[1]
             self.job.set_ip(ip_addr)
-            # todo make this a proper debug statement
-            sys.stderr.write("Job %s:  DNS lookup for %s gave %s\n" % \
+            logger.info("Job %s:  DNS lookup for %s gave %s" % \
                                 (self.job.get_job_id(), res.answers[0].name, self.job.get_ip()))
         else:
             self.job.set_ping_sent(0)
@@ -39,7 +39,7 @@ class DNSclient(object):
 
     def errorHandler(self, failure):
         # Need to implement error handling
-        sys.stderr.write(str(failure))
+        logger.warning("Job %s: DNS error: %s" % (self.job_id, failure))
         pass
 
     def close(self):

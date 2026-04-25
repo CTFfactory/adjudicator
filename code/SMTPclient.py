@@ -5,6 +5,7 @@ from twisted.internet.defer import Deferred
 from GenSocket import GenCoreFactory
 import time
 import sys
+from logger import logger
 
 
 class SMTPClient(protocol.Protocol):
@@ -31,19 +32,17 @@ class SMTPClient(protocol.Protocol):
 
     def connectionMade(self):
         if self.job_id:
-            sys.stderr.write("Job %s: Made connection to %s:%s\n" % (self.job_id, self.factory.get_ip(), self.factory.get_port()))
+            logger.info("Job %s: Made connection to %s:%s" % (self.job_id, self.factory.get_ip(), self.factory.get_port()))
         else:
-            sys.stderr.write("Made connection to %s:%s\n" % (self.factory.get_ip(), self.factory.get_port()))
-        #sys.stderr.write("Sending: %s\n" % self.request)
+            logger.info("Made connection to %s:%s" % (self.factory.get_ip(), self.factory.get_port()))
 
     def dataReceived(self, data):
         data_len = len(data)
-        self.recv += data
-        sys.stderr.write("Job %s: Received %s" % (self.job_id, data))
+        self.recv += data.decode('utf-8')
+        logger.debug("Job %s: Received %s" % (self.job_id, data))
         self.factory.add_data(data)
-        sys.stderr.write(data)
-        if "220" in data and "SMTP" in data:
-            sys.stderr.write("Job %s: Sending %s" % (self.job_id, self.request))
+        if "220" in data.decode('utf-8') and "SMTP" in data.decode('utf-8'):
+            logger.debug("Job %s: Sending %s" % (self.job_id, self.request))
             self.transport.write(self.no_unicode(self.request))
             return
         elif "250" in data:
@@ -74,19 +73,17 @@ class SMTPFactory(GenCoreFactory):
 
     def service_pass(self, reason):
         self.service.pass_conn()
-        sys.stdout.write("Job %s: Successfully checked SMTP connection for %s(%s)\n" % (self.job_id, self.fqdn, self.ip))
+        logger.info("Job %s: Successfully checked SMTP connection for %s(%s)" % (self.job_id, self.fqdn, self.ip))
 
     def service_fail(self, failure):
         self.service.pass_conn(failure)
-        sys.stdout.write("Job %s: Failed check of SMTP connection for %s(%s)\n" % (self.job_id, self.fqdn, self.ip))
+        logger.warning("Job %s: Failed check of SMTP connection for %s(%s)" % (self.job_id, self.fqdn, self.ip))
 
     def clientConnectionFailed(self, connector, reason):
         self.end = time.time()
         if self.params.debug:
-            sys.stderr.write( "Job %s: clientConnectionFailed:\t" % self.job.get_job_id())
-            sys.stderr.write( "reason %s\t" % reason)
-            sys.stderr.write( "self.reason: %s\t" % self.reason)
-            sys.stderr.write( "\nReceived: %s\n" % self.get_server_headers())
+            logger.warning("Job %s: clientConnectionFailed: %s" % (self.job.get_job_id(), reason))
+            logger.debug("Received headers: %s" % self.get_server_headers())
         conn_time = None
         if self.start:
             conn_time = self.end - self.start
@@ -98,10 +95,7 @@ class SMTPFactory(GenCoreFactory):
     def clientConnectionLost(self, connector, reason):
         self.end = time.time()
         if self.params.debug:
-            sys.stderr.write( "Job %s: clientConnectionLost\t" % self.job.get_job_id())
-            sys.stderr.write( "given reason: %s\t" % reason)
-            sys.stderr.write( "self.reason: %s\t" % self.reason)
-            #sys.stderr.write( "\nReceived: %s\n" % self.get_server_headers())
+            logger.info("Job %s: clientConnectionLost: %s" % (self.job.get_job_id(), reason))
         if self.data:
             self.service.set_data(self.data)
         if self.fail and self.reason:

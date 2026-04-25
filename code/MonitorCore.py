@@ -14,6 +14,7 @@ import traceback
 import time
 import sys
 import os
+from logger import logger
 
 class MonitorCore(object):
 
@@ -84,35 +85,38 @@ class MonitorCore(object):
         job_id = job.get_job_id()
         job_json = job.get_result_json_str()
         if len(result) > 300:
-            filename = "sbe/%s.out" % time.strftime("%Y-%m-%d_%H%M%S", time.localtime(time.time()))
-            fileobj = open(filename, "w")
-            fileobj.write(result)
-            fileobj.close()
-            sys.stderr.write("Job %s: submitted, SBE response in file %s\n" % (job_id, filename))
+            if logger.should_save_data():
+                filename = "sbe/%s.out" % time.strftime("%Y-%m-%d_%H%M%S", time.localtime(time.time()))
+                fileobj = open(filename, "w")
+                fileobj.write(result)
+                fileobj.close()
+                logger.info("Job %s: submitted, SBE response in file %s" % (job_id, filename))
+            else:
+                logger.info("Job %s: submitted, SBE response > 300 chars (not saved)" % job_id)
         else:
-            sys.stderr.write("Job %s: submitted, SBE response: %s\n" % (job_id, result))
-        sys.stderr.write("Job %s: submitted: %s\n" % (job_id, job_json))
+            logger.info("Job %s: submitted, SBE response: %s" % (job_id, result))
+        logger.debug("Job %s: submitted: %s" % (job_id, job_json))
 
     def job_submit_pass(self, result, job):
         job_id = job.get_job_id()
-        sys.stderr.write("Job %s: successfully submitted %s \n" % (job_id, result))
+        logger.info("Job %s: successfully submitted %s " % (job_id, result))
         self.proc_result(job, result)
         self.jobs_done.append(job_id)
         self.jobs.submitted_job(job_id)
 
     def job_submit_fail(self, failure, job):
         job_id = job.get_job_id()
-        sys.stderr.write("Job %s: failed due to %s \n" % (job_id, failure.getErrorMessage()))
+        logger.error("Job %s: failed due to %s " % (job_id, failure.getErrorMessage()))
         if job.get_job_fail():
-            sys.stderr.write("giving up.\n")
+            logger.error("Job %s: giving up." % job_id)
         else:
-            sys.stderr.write("retrying in %s.\n" % self.resubmit_interval)
+            logger.info("Job %s: retrying in %s." % (job_id, self.resubmit_interval))
             reactor.callLater(self.resubmit_interval, self.post_job, job)
 
     def dns_fail(self, failure, job, dnsobj):
         # Do this if the DNS check failed
         job_id = job.get_job_id()
-        sys.stderr.write("Job %s:  DNS failed. %s\n" % (job_id, failure))
+        logger.warning("Job %s:  DNS failed. %s" % (job_id, failure))
         job = self.jobs.finish_job(job_id, "DNS failed")
         job.set_ip("fail")
         self.post_job(job)
@@ -121,7 +125,7 @@ class MonitorCore(object):
 
     def dns_pass(self, result, job, dnsobj):
         jobid = job.get_job_id()
-        print("Job %s:  DNS passed: %s" % (jobid, result))
+        logger.info("Job %s:  DNS passed: %s" % (jobid, result))
         reactor.callLater(0.1, self.pinghost, job)
         dnsobj.close()
         del dnsobj
@@ -135,27 +139,27 @@ class MonitorCore(object):
 
     def ping_pass(self, result, job, pingobj):
         jobid = job.get_job_id()
-        sys.stderr.write("Job %s:  Ping passed. %s\n" % (jobid, result))
+        logger.info("Job %s:  Ping passed. %s" % (jobid, result))
         reactor.callLater(1, self.check_services, job)
         del pingobj
 
     def ping_fail(self, failure, job, pingobj):
         jobid = job.get_job_id()
-        sys.stderr.write("Job %s:  Ping failed. %s\n" % (jobid, failure))
-        job = self.jobs.finish_job(job_id, "Ping failed")
+        logger.warning("Job %s:  Ping failed. %s" % (jobid, failure))
+        job = self.jobs.finish_job(jobid, "Ping failed")
         job.set_ip("fail")
         self.post_job(job)
         del pingobj
 
     def ftp_fail(self, failure, service, job_id):
         if "530 Login incorrect" in failure:
-            sys.stderr.write("Job %s: Login failure\n" % job_id)
+            logger.warning("Job %s: Login failure" % job_id)
             service.fail_login()
         elif "Connection refused" in failure:
-            sys.stderr.write("Job %s: Connection failure\n" % job_id)
+            logger.warning("Job %s: Connection failure" % job_id)
             service.fail_conn("refused")
         else:
-            sys.stderr.write("Job %s: Failure %s\n" % (job_id, failure))
+            logger.error("Job %s: Failure %s" % (job_id, failure))
             service.fail_conn(failure)
 
     def check_services(self, job):
@@ -189,24 +193,24 @@ class MonitorCore(object):
         proto = service.get_proto()
         port = service.get_port()
         jobid = job.get_job_id()
-        sys.stderr.write("Job %s:  Service %s/%s passed. %s\n" % (jobid, port, proto, result))
+        logger.info("Job %s:  Service %s/%s passed. %s" % (jobid, port, proto, result))
 
     def gen_service_connect_fail(self, failure, job, service):
         service.fail_conn(failure)
         proto = service.get_proto()
         port = service.get_port()
         jobid = job.get_job_id()
-        sys.stderr.write("Job %s:  Service %s/%s failed:\n\t%s\n" % (jobid, port, proto, failure))
+        logger.warning("Job %s:  Service %s/%s failed: %s" % (jobid, port, proto, failure))
 
 def check_dir(dir):
     try:
         os.stat(dir)
     except OSError as e:
         if e.errno == 2:
-            sys.stderr.write("No such directory %s, creating" % dir)
+            logger.info("No such directory %s, creating" % dir)
             os.mkdir(dir)
         else:
-            sys.stderr.write("Directory %s - Unknown error%s: %s" % (e.errno, e.strerror))
+            logger.error("Directory %s - Unknown error %s: %s" % (dir, e.errno, e.strerror))
 
 
 if __name__=="__main__":

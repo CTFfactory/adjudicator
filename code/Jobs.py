@@ -4,6 +4,8 @@ import time
 import json
 import base64
 import pprint
+import os
+from logger import logger
 
 statuses = ["pass", "reset", "timeout", "refused", "invalid"]
 
@@ -32,19 +34,19 @@ class Jobs(object):
         self.jobs[self.latest_job_id] = Job(job_json_str, self.debug)
         self.jobs[self.latest_job_id].set_job_id(self.latest_job_id)
         self.todo.append(self.latest_job_id)
-        sys.stderr.write("Job %s: added %s\n" % (self.latest_job_id, job_json_str))
+        logger.debug("Job %s: added %s" % (self.latest_job_id, job_json_str))
         return self.latest_job_id
 
     def find_done_jobs(self):
         for job_id in self.proc:
             if self.jobs[job_id].is_done():
-                sys.stderr.write("Job %s: is done, processing.\n" % job_id)
+                logger.debug("Job %s: is done, processing." % job_id)
                 self.done.append(job_id)
         for job_id in self.done:
             if job_id in self.proc:
                 self.proc.remove(job_id)
             else:
-                sys.stderr.write("WTF? Job %s is done but not in self.proc!\n" % job_id)
+                logger.error("WTF? Job %s is done but not in self.proc!" % job_id)
         return self.done
 
     def finish_job(self, job_id, reason):
@@ -52,13 +54,13 @@ class Jobs(object):
             self.jobs[job_id].fail_dns()
         if job_id in self.done:
             self.done.remove(job_id)
-            sys.stdout.write("Job %s: Closing out finished job because %s\n" % (job_id, reason))
+            logger.info("Job %s: Closing out finished job because %s" % (job_id, reason))
         elif job_id in self.proc:
             self.proc.remove(job_id)
-            sys.stdout.write("Job %s: Prematurely closing out job while in process because %s!\n" % (job_id, reason))
+            logger.info("Job %s: Prematurely closing out job while in process because %s!" % (job_id, reason))
         elif job_id in self.todo:
             self.todo.remove(job_id)
-            sys.stdout.write("Job %s: Prematurely closing out job before starting it because %s!\n" % (job_id, reason))
+            logger.info("Job %s: Prematurely closing out job before starting it because %s!" % (job_id, reason))
         job = self.jobs[job_id]
         self.pending_submitted.append(job_id)
         return job
@@ -184,14 +186,14 @@ class Job(object):
 
     def get_json_str(self):
         #TODO - should this call self.get_json()?
-        sys.stderr.write("Job %s: Converting to JSON\n" % self.job_id)
+        logger.debug("Job %s: Converting to JSON" % self.job_id)
         return json.dumps(self.get_json())
 
     def get_result_json_str(self):
         #TODO - should this call self.get_json()?
-        sys.stderr.write("Job %s: Converting to result JSON\n" % self.job_id)
-        #sys.stderr.write("Job %s: Before: %s\n" % (self.job_id, self.get_json_str()))
-        sys.stderr.write("Job %s: %s\n" % (self.job_id, json.dumps(self.get_result_json())))
+        logger.debug("Job %s: Converting to result JSON" % self.job_id)
+        #logger.debug("Job %s: Before: %s" % (self.job_id, self.get_json_str()))
+        logger.debug("Job %s: %s" % (self.job_id, json.dumps(self.get_result_json())))
         return json.dumps(self.get_result_json())
 
     def get_dns(self):
@@ -267,7 +269,7 @@ class Job(object):
         for service in self.services:
             json_services.append(service.get_json())
         self.json["host"]["services"] = json_services
-        sys.stderr.write("Job %s: converting to json:\n" % self.job_id)
+        logger.debug("Job %s: converting to json" % self.job_id)
         if self.debug:
             pp = pprint.PrettyPrinter(depth=4)
             pp.pprint(self.json)
@@ -486,21 +488,21 @@ class Service(object):
         self.json["auth"][index]["login"] = "fail"
 
     def set_data(self, data):
-        today = time.strftime("%Y%m%d" ,time.gmtime())
-        data_file = open("raw/%s_Job_%s_data" % (today, self.job.get_job_id()), "w")
+        if logger.should_save_data():
+            today = time.strftime("%Y%m%d" ,time.gmtime())
+            data_file = open("raw/%s_Job_%s_data" % (today, self.job.get_job_id()), "w")
+            if type(data) == type('a'):
+                data_file.write(data)
+                data = data.encode('utf-8')
+            else:
+                data_file.write(data.decode('utf-8'))
+            data_file.close()
+        
         if type(data) == type('a'):
-            data_file.write(data)
-            data = data.encode('utf-8')
-        else:
-            data_file.write(data.decode('utf-8'))
+             data = data.encode('utf-8')
         self.json["content"] = base64.b64encode(data)
-        #data_file.write(base64.b64encode(data))
-        data_file.close()
 
     def get_url(self):
-        sys.stderr.write("FUCK REMOVE THIS SHIT!")
-        sys.stderr.write("FUCK REMOVE THIS SHIT!")
-        sys.stderr.write("FUCK REMOVE THIS SHIT!")
         # TODO - replace with real code after the JSON is updated
         return self.url
 
@@ -631,25 +633,25 @@ class Content(object):
 
     def verify_page(self, page):
         if self.debug:
-            sys.stderr.write("Checking contents...\n\tChecking size...\n")
+            logger.debug("Checking contents...\n\tChecking size...")
         if len(page)==self.json["size"]:
             if self.debug:
-                sys.stderr.write("\tSize is good, checking keywords...\n:w")
+                logger.debug("\tSize is good, checking keywords...")
             for keyword in self.json["keywords"]:
                 if self.debug:
-                    sys.stderr.write("\t\tChecking %s..." % keyword)
+                    logger.debug("\t\tChecking %s..." % keyword)
                 if keyword in page:
                     if self.debug:
-                        sys.stderr.write("Good!\n")
+                        logger.debug("Good!")
                     continue
                 else:
                     if self.debug:
-                        sys.stderr.write("Bad!\n")
+                        logger.debug("Bad!")
                     self.invalid()
         else:
             self.invalid()
         if self.debug:
-            sys.stderr.write("Done content check!\n")
+            logger.debug("Done content check!")
         self.success()
 
     def get_size(self):
@@ -686,11 +688,12 @@ class Content(object):
             return False
 
     def set_data(self, data):
-        today = time.strftime("%Y%m%d" ,time.gmtime())
-        data_file = open("raw/%s_Job_%s_data" % (today, self.job.get_job_id()), "w")
+        if logger.should_save_data():
+            today = time.strftime("%Y%m%d" ,time.gmtime())
+            data_file = open("raw/%s_Job_%s_data" % (today, self.job.get_job_id()), "w")
+            data_file.write(base64.b64encode(data))
+            data_file.close()
         self.json["data"] = base64.b64encode(data)
-        data_file.write(base64.b64encode(data))
-        data_file.close()
 
     def get_data(self):
         if "data" in self.json:

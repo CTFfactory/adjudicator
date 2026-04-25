@@ -2,11 +2,12 @@
 
 import sys
 import json
+import os
 
 class Parameters(object):
     # TODO Document methods and attributes
     def __init__(self):
-        self.debug = False
+        self.debug = os.environ.get("LOG_LEVEL", "INFO").upper() == "DEBUG"
         self.timeout = 90
         # TODO read this from a file so its not exposed in repository
         # IDEA - configuration file??
