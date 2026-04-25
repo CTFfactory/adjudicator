@@ -11,6 +11,7 @@ from twisted.internet import reactor
 import string
 import sys
 from io import BytesIO
+from logger import logger
 
 class BufferingProtocol(Protocol):
     """Simple utility class that holds all data written to it in a buffer."""
@@ -44,48 +45,42 @@ class FTP_client(object):
         self.ftp_deferred = None
 
     def success(self, response):
-        sys.stderr.write("Success!  Got response:\n----\n")
-        if response is None:
-            sys.stderr.write(None)
-        else:
-            sys.stderr.write(string.join(response, '\n'))
-        sys.stderr.write("---\n")
+        logger.debug("Success!  Got response: %s" % response)
 
     def fail(self, error):
         if isinstance(error, Failure):
             msg = error.getErrorMessage()
             self.failfunc(msg, self.service, self.job_id)
-            sys.stderr.write("Job ID %s:  FTP check failed, error %s\n" % (self.job_id, msg))
+            logger.warning("Job ID %s:  FTP check failed, error %s" % (self.job_id, msg))
         else:
             self.failfunc(error, self.service, self.job_id)
-            sys.stderr.write("Job ID %s:  FTP check failed, error %s\n" % (self.job_id, error))
+            logger.warning("Job ID %s:  FTP check failed, error %s" % (self.job_id, error))
 
     def showFiles(self, result, fileListProtocol):
-        sys.stderr.write('Processed file listing:')
+        logger.debug('Processed file listing:')
         for file in fileListProtocol.files:
-            sys.stderr.write('    %s: %d bytes, %s' \
+            logger.debug('    %s: %d bytes, %s' \
                   % (file['filename'], file['size'], file['date']))
-        sys.stderr.write('Total: %d files' % (len(fileListProtocol.files)))
+        logger.debug('Total: %d files' % (len(fileListProtocol.files)))
 
     def showBuffer(self, result, bufferProtocol):
-        sys.stderr.write("Got data: %s\n" % bufferProtocol.buffer.getvalue())
+        logger.debug("Got data: %s" % bufferProtocol.buffer.getvalue())
 
     def checkBuffer(self, result, bufferProtocol):
         found_data = bufferProtocol.buffer.getvalue()
-        print("Got:")
-        print(result)
-        sys.stderr.write("Also got: |%s|\n" % found_data.strip("\r\n"))
+        logger.debug("Got: %s" % result)
+        logger.debug("Also got: |%s|" % found_data.decode('utf-8').strip("\r\n"))
         for content in self.service.get_contents():
-            sys.stderr.write("Checking against: |%s|\n" % content.get_data())
-            if found_data.strip("\r\n") == content.get_data():
-                sys.stderr.write("Job ID %s: content check passed %s\n" % (self.job.get_job_id(), found_data))
+            logger.debug("Checking against: |%s|" % content.get_data())
+            if found_data.decode('utf-8').strip("\r\n") == content.get_data():
+                logger.info("Job ID %s: content check passed" % self.job.get_job_id())
                 content.success()
             else:
                 content.fail(found_data)
-                sys.stderr.write("Job ID %s: content check failed %s\n" % (self.job.get_job_id(), found_data))
+                logger.warning("Job ID %s: content check failed" % self.job.get_job_id())
 
     def connectionMade(self, ftpClient):
-        sys.stderr.write("Job ID: %s service %s/%s connected\n" % \
+        logger.info("Job ID: %s service %s/%s connected" % \
                          (self.job_id, self.service.get_port(), self.service.get_proto()))
         self.service.pass_conn()
         username = self.service.get_username()
@@ -97,7 +92,7 @@ class FTP_client(object):
         # Get config
         passive = self.service.get_passive()
         # Create the client
-        sys.stderr.write("Job ID %s:  Connecting to %s %s/%s\n" % \
+        logger.info("Job ID %s:  Connecting to %s %s/%s" % \
                          (self.job_id, self.ip_addr, self.port, self.proto))
         self.creator = ClientCreator(reactor, ctfFTPclient, passive=passive)
         self.ftp_deferred = self.creator.connectTCP(self.ip_addr, self.port)
@@ -105,14 +100,14 @@ class FTP_client(object):
         self.ftp_deferred.addErrback(self.fail)
 
     def procpass(self, result, ftpClient, password):
-        sys.stderr.write("Got %s\n" % result)
-        sys.stderr.write("Sending PASS %s\n" % password)
+        logger.debug("Got %s" % result)
+        logger.debug("Sending PASS")
         d = ftpClient.queueStringCommand("PASS %s" % password)
         d.addCallback(self.check_content, ftpClient)
         d.addErrback(self.fail)
 
     def login(self, ftpClient, username, password):
-        sys.stderr.write("Sending USER %s\n" % username)
+        logger.debug("Sending USER %s" % username)
         d = ftpClient.queueStringCommand("USER %s" % username)
         d.addCallback(self.procpass, ftpClient, password)
         d.addErrback(self.fail)

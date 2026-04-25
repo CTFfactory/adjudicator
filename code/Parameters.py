@@ -2,17 +2,18 @@
 
 import sys
 import json
+import os
 
 class Parameters(object):
     # TODO Document methods and attributes
     def __init__(self):
-        self.debug = False
+        self.debug = os.environ.get("LOG_LEVEL", "INFO").upper() == "DEBUG"
         self.timeout = 90
         # TODO read this from a file so its not exposed in repository
         # IDEA - configuration file??
-        self.sbe_auth = "1ee236ee-b24b-4e5d-8ace-1ae7dc9a1f5c"
-        self.sb_ip = "100.97.85.16"
-        self.sb_port = 80
+        self.sbe_auth = os.environ.get("SCOREBOT_SBE_AUTH", "1ee236ee-b24b-4e5d-8ace-1ae7dc9a1f5c")
+        self.sb_ip = os.environ.get("SCOREBOT_SB_IP", "100.97.85.16")
+        self.sb_port = int(os.environ.get("SCOREBOT_SB_PORT", 80))
         self.job_url = "/api/job"
         self.reason = ""
         self.headers = {}

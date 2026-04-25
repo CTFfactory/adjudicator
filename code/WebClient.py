@@ -9,6 +9,8 @@ from Jobs import Jobs
 import time
 import sys
 import re
+import os
+from logger import logger
 
 class Cookie(object):
 
@@ -120,42 +122,31 @@ class WebClient(protocol.Protocol):
 
     def connectionMade(self):
         if self.job_id:
-            sys.stderr.write("Job %s: Made connection to %s:%s\n" % (self.job_id, self.factory.get_ip(), self.factory.get_port()))
+            logger.info("Job %s: Made connection to %s:%s" % (self.job_id, self.factory.get_ip(), self.factory.get_port()))
         else:
-            sys.stderr.write("Made connection to %s:%s\n" % (self.factory.get_ip(), self.factory.get_port()))
-        self.stderr("Sending this content\r\n", self.request)
+            logger.info("Made connection to %s:%s" % (self.factory.get_ip(), self.factory.get_port()))
+        logger.debug("Sending this content:\n%s" % self.request)
         self.transport.write((self.request.decode('utf-8')+"\r\n").encode('utf-8'))
 
     def stderr(self, message, data):
-        line = "="*80 + "\n"
-        sys.stderr.write(line)
-        sys.stderr.write(message)
-        sys.stderr.write("\n")
-        sys.stderr.write(data)
-        sys.stderr.write("\n")
-        sys.stderr.write(line)
-        sys.stderr.flush()
+        # Deprecated: use logger instead. Keeping for compatibility but making it debug level.
+        logger.debug("%s: %s" % (message, data))
 
     def dataReceived(self, data):
-        sys.stderr.write("Dumping data contents: ")
-        print(data)
-        self.stderr("Received reponse of datatype ", str(type(data)))
-        self.stderr("\twith this content: \n\t", data.decode('utf-8'))
+        logger.debug("Job %s: Received %d bytes" % (self.job_id, len(data)))
         data_len = len(data)
         self.recv += data.decode('utf-8')
         self.factory.add_data(data.decode('utf-8'))
         if self.factory.get_debug():
-            sys.stderr.write( "Job %s: ConnID %s: Received:\n %s\n" % (self.job_id, self.factory.get_conn_id(), self.recv))
+            logger.debug("Job %s: ConnID %s: Received:\n %s" % (self.job_id, self.factory.get_conn_id(), self.recv))
         self.parser.execute(data, data_len)
-        #sys.stderr.write(line)
-        #sys.stderr.write("Received this body: \n\t%s\n" % self.parser.recv_body())
-        #sys.stderr.write(line)
+
         if self.parser.is_headers_complete():
             status = self.parser.get_status_code()
-            sys.stderr.write("Job %s: Returned status %s\n" % (self.job_id, status))
+            logger.info("Job %s: Returned status %s" % (self.job_id, status))
             if self.authing:
                 if status != 302:
-                    raise Exception("Job %s: Failed authentication\n" % (self.job_id))
+                    raise Exception("Job %s: Failed authentication" % (self.job_id))
             if self.isjob:
                 self.factory.set_code(status)
                 if status == 204:
@@ -171,7 +162,7 @@ class WebClient(protocol.Protocol):
             else:
                 conn_id = self.factory.get_conn_id()
             headers = self.parser.get_headers()
-            sys.stderr.write( "Job %s: ConnID %s: HEADER COMPLETE!\n\t%s\n\n" % (self.job_id, conn_id, headers))
+            logger.debug("Job %s: ConnID %s: HEADER COMPLETE!\n\t%s" % (self.job_id, conn_id, headers))
             if "Location" in headers:
                 location = headers["Location"]
             if "Set-Cookie" in headers:
@@ -183,16 +174,14 @@ class WebClient(protocol.Protocol):
         if self.parser.is_partial_body():
             self.body += self.parser.recv_body()
             if self.factory.get_debug():
-                print("self.body:")
-                print(self.body)
-                sys.stderr.write("Current self.body: %s\n" % self.body)
+                logger.debug("Job %s: Current self.body: %s" % (self.job_id, self.body))
         # TODO - find a way to deal with this, SBE jobs currently don't trigger this check, but we need it for health checks
         if self.parser.is_message_complete():
-            sys.stderr.write( "Job %s: ConnID %s: MESSAGE COMPLETE for %s!\n" % (self.job_id, self.factory.get_conn_id(), self.url))
+            logger.debug("Job %s: ConnID %s: MESSAGE COMPLETE for %s!" % (self.job_id, self.factory.get_conn_id(), self.url))
             if self.conn:
                 self.conn.verify_page(self.body)
             if self.factory.get_debug():
-                sys.stderr.write("Job %s: Received this body: %s\n" % (self.job_id, self.body))
+                logger.debug("Job %s: Received this body: %s" % (self.job_id, self.body))
             self.factory.proc_body(self.body)
            # self.factory.proc_body(self.body)
             self.parser = None
@@ -220,8 +209,7 @@ class WebCoreFactory(GenCoreFactory):
         return self.postdata
 
     def set_cookie(self, cookie_str):
-        # todo - make this debug level later
-        sys.stderr.write("Job %s: Parsing cookie string %s\n" % (self.get_job_id(), cookie_str))
+        logger.debug("Job %s: Parsing cookie string %s" % (self.get_job_id(), cookie_str))
         self.cj.add(cookie_str)
 
     def get_cookies(self):
@@ -289,7 +277,8 @@ class JobFactory(WebCoreFactory):
             self.verb = "POST"
             #self.postdata = self.job.get_json_str()
             self.postdata = self.job.get_result_json_str()
-            sys.stderr.write("Job %s: Starting Job Post, sending JSON: %s\n" % (self.job.get_job_id(), self.postdata))
+            logger.info("Job %s: Starting Job Post" % self.job.get_job_id())
+            logger.debug("Job %s: Sending JSON: %s" % (self.job.get_job_id(), self.postdata))
         else:
             raise Exception("Job %s: Unknown operation %s\n" % (self.job_id, op))
 
@@ -310,13 +299,11 @@ class JobFactory(WebCoreFactory):
     def clientConnectionFailed(self, connector, reason):
         if self.params.debug:
             if "put" in self.op:
-                sys.stderr.write( "Job %s:  JobFactory Put clientConnectionFailed\t" % self.job.get_job_id())
+                logger.warning("Job %s: JobFactory Put clientConnectionFailed: %s" % (self.job.get_job_id(), reason))
             else:
-                sys.stderr.write( "Job GET request clientConnectionFailed\t" % self.job.get_job_id())
-            sys.stderr.write( "given reason: %s\t" % reason)
-            sys.stderr.write( "self.reason: %s\t" % self.reason)
+                logger.warning("Job GET request clientConnectionFailed: %s" % reason)
             if self.debug:
-                sys.stderr.write( "\nReceived: %s\n" % self.get_server_headers())
+                logger.debug("Received headers: %s" % self.get_server_headers())
         #self.params.fail_conn("Job %s connection failed\n" %
                               #(self.op), reason.getErrorMessage(), self.get_server_headers())
         if connector in self.deferreds:
@@ -325,49 +312,43 @@ class JobFactory(WebCoreFactory):
     def clientConnectionLost(self, connector, reason):
         if "put" in self.op:
             job_id = self.job.get_job_id()
-            sys.stderr.write("Job %s: Received code %s\n" % (job_id, self.code))
+            logger.info("Job %s: Received code %s" % (job_id, self.code))
             if self.code == 202:
-                sys.stderr.write("Job %s: submitted.\n" % job_id)
+                logger.info("Job %s: submitted successfully" % job_id)
                 self.deferreds[connector].callback("Connection closed")
                 return
             else:
                 self.deferreds[connector].errback(reason)
-                sys.stderr.write( "Job %s: JobFactory Put clientConnectionLost, received code %s\n" % (job_id, self.code))
+                logger.warning("Job %s: JobFactory Put clientConnectionLost, received code %s" % (job_id, self.code))
                 return
         elif "get" in self.op:
             if self.get_debug():
-                sys.stderr.write( "Job GET request clientConnectionLost\n")
-            sys.stderr.write("\nReceived code %s:" % self.code)
+                logger.debug("Job GET request clientConnectionLost")
+            logger.info("Job GET Received code %s" % self.code)
             if self.debug:
-                sys.stderr.write( "\nReceived: %s\n" % self.get_server_headers())
+                logger.debug("Received headers: %s" % self.get_server_headers())
             if self.code == 403:
                 # This means that SBE has no running games, so just die quietly.
-                sys.stderr.write("Got code 403, quitting\n")
-                sys.stderr.write("\tGot %s from server\n" % self.body)
+                logger.info("Got code 403 (No games?), quitting")
                 return
             if self.fail:
-                sys.stderr.write("Fail bit set\n")
-                sys.stderr.write( "given reason: %s\t" % reason)
-                sys.stderr.write( "self.reason: %s\t" % self.reason)
-                sys.stderr.write("error message:\n%s\n\n" % reason.getErrorMessage())
+                logger.warning("Fail bit set for Job GET. Reason: %s" % reason.getErrorMessage())
             else:
-                #Connection closed cleanly, process the results
-                #sys.stderr.write("Adding job %s\n" % self.body)
-                #if "completed" in self.body:
-                #self.deferreds[connector].callback(self.body)
-                #else:
                 if self.body:
                     if "<!DOCTYPE html>" in self.body:
-                        filename = "sbe/%s.out" % time.strftime("%Y-%m-%d_%H%M%S", time.localtime(time.time()))
-                        fileobj = open(filename, "w")
-                        fileobj.write(self.body)
-                        fileobj.close()
-                        sys.stderr.write("HTML response from SBE detected, written to %s\n" % (filename))
+                        if logger.should_save_data():
+                            filename = "sbe/%s.out" % time.strftime("%Y-%m-%d_%H%M%S", time.localtime(time.time()))
+                            fileobj = open(filename, "w")
+                            fileobj.write(self.body)
+                            fileobj.close()
+                            logger.info("HTML response from SBE detected, written to %s" % filename)
+                        else:
+                            logger.info("HTML response from SBE detected (not saved)")
                     else:
-                        sys.stderr.write("Adding as job:\n %s\n" % self.body)
+                        logger.debug("Adding as job: %s" % self.body)
                         self.jobs.add(self.body)
                 else:
-                    sys.stderr.write("No job to add!\n")
+                    logger.info("No job to add!")
         else:
             raise Exception("Unknown op: %s\n" % self.op)
 
@@ -400,7 +381,7 @@ class WebServiceCheckFactory(WebCoreFactory):
         # email=test%40delta.net&password=password&action=Login
         self.auth_data = "%s=%s&%s=%s&action=Login" % \
                          (username_field, username, password_field, password)
-        sys.stderr.write("Job %s: authdata %s\n" % (self.get_job_id(), self.auth_data))
+        logger.debug("Job %s: authdata %s" % (self.get_job_id(), self.auth_data))
         return self.auth_data
 
     def buildProtocol(self, addr):
@@ -428,12 +409,12 @@ class WebServiceCheckFactory(WebCoreFactory):
 
     def auth_pass(self, result):
         self.authenticating = False
-        sys.stdout.write("Job %s: Successfully authenticated against %s: %s" % (self.get_job_id(), self.addr, result))
+        logger.info("Job %s: Successfully authenticated against %s" % (self.get_job_id(), self.addr))
         self.check_contents()
 
     def auth_fail(self, failure):
         self.authenticating = False
-        sys.stdout.write("Job %s: Successfully authenticated against %s: %s" % (self.get_job_id(), self.addr, failure))
+        logger.warning("Job %s: Authentication failed against %s: %s" % (self.get_job_id(), self.addr, failure))
         self.check_contents()
 
     def check_content(self, content):
@@ -463,35 +444,33 @@ class WebServiceCheckFactory(WebCoreFactory):
                 deferred.addErrback(self.conn_fail)
 
     def conn_pass(self, result):
-        sys.stdout.write("Job %s: Successfully connected to %s: %s" % (self.get_job_id(), self.addr, result))
+        logger.info("Job %s: Successfully connected to %s" % (self.get_job_id(), self.addr))
         self.service.pass_conn()
 
     def conn_fail(self, failure):
-        sys.stdout.write("Job %s: Failed connect on content check with result %s:  %s/%s | %s\n" % \
-                         (self.job.get_job_id(), failure, self.service.get_port(), self.service.get_proto(),
-                          content.get_url))
-        print(failure)
+        logger.warning("Job %s: Failed connect for service %s/%s" % \
+                         (self.get_job_id(), self.service.get_port(), self.service.get_proto()))
         self.service.fail_conn()
 
     def content_pass(self, result, content):
         content.success()
         self.service.pass_conn()
-        sys.stdout.write("Job %s: Finished content check for  %s/%s | %s\n" % \
-                         (self.job.get_job_id(), self.service.get_port(), self.service.get_proto(),
+        logger.info("Job %s: Finished content check for %s/%s | %s" % \
+                         (self.get_job_id(), self.service.get_port(), self.service.get_proto(),
                           content.get_url()))
 
     def content_fail(self, failure, content):
         content.fail(failure)
-        sys.stdout.write("Job %s: Failed content integrity check with result %s:  %s/%s | %s\n" % \
-                         (self.job.get_job_id(), failure, self.service.get_port(), self.service.get_proto(),
-                          content.get_url()))
-        print(failure)
+        logger.warning("Job %s: Failed content integrity check for %s/%s | %s: %s" % \
+                         (self.get_job_id(), self.service.get_port(), self.service.get_proto(),
+                          content.get_url(), failure))
 
     def add_fail(self, reason):
         if "timeout" in reason:
-            sys.stderr.write("Job %s service %s timedout\n" % (self.get_job_id(), self.port))
+            logger.warning("Job %s service %s timed out" % (self.get_job_id(), self.port))
             self.service.timeout("%s\r\n%s" % (self.get_server_headers(), self.body))
         else:
+            logger.warning("Job %s service %s failed: %s" % (self.get_job_id(), self.port, reason))
             self.service.fail_conn(reason, "%s\r\n%s" % (self.get_server_headers(), self.body))
 
     #def get_job(self):
@@ -504,10 +483,8 @@ class WebServiceCheckFactory(WebCoreFactory):
         self.end = time.time()
         #if self.params.debug:
         if True:
-            sys.stderr.write( "Job %s: clientConnectionFailed:\t" % self.job.get_job_id())
-            sys.stderr.write( "reason %s\n" % reason.getErrorMessage())
-            reason.printTraceback()
-            sys.stderr.write( "\nReceived: %s\n" % self.get_server_headers())
+            logger.warning("Job %s: clientConnectionFailed: %s" % (self.job.get_job_id(), reason.getErrorMessage()))
+            logger.debug("Received headers: %s" % self.get_server_headers())
         conn_time = None
         if self.start:
             conn_time = self.end - self.start
@@ -526,10 +503,8 @@ class WebServiceCheckFactory(WebCoreFactory):
         self.end = time.time()
         #if self.params.debug:
         if True:
-            sys.stderr.write( "Job %s: clientConnectionLost\t" % self.job.get_job_id())
-            sys.stderr.write( "given reason: %s\t" % reason.getErrorMessage())
-            sys.stderr.write( "self.reason: %s\t" % self.reason)
-            sys.stderr.write( "\nReceived: %s\n" % self.get_server_headers())
+            logger.info("Job %s: clientConnectionLost: %s" % (self.job.get_job_id(), reason.getErrorMessage()))
+            logger.debug("Received headers: %s" % self.get_server_headers())
         conn_time = self.end - self.start
         if self.data:
             self.service.set_data(self.data)
