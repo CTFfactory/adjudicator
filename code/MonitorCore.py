@@ -35,12 +35,18 @@ class MonitorCore(object):
         sb_port = self.params.get_sb_port()
         timeout = self.params.get_timeout()
         if self.params.get_scheme() == "https":
-            sys.stderr.write(f"Connecting to SB Core: {sb_ip}:{sb_port}, timeout is {timeout}")
+            if self.params.debug:
+                logger.debug("Connecting to SB Core: %s:%s, timeout is %s" % (sb_ip, sb_port, timeout))
+            else:
+                logger.info("Connecting to SB Core: %s:%s, timeout is %s" % (sb_ip, sb_port, timeout))
             ssl_obj = ssl.CertificateOptions()
             reactor.connectSSL(sb_ip, sb_port, factory, ssl_obj,\
                                             timeout)
         elif self.params.get_scheme() == "http":
-            sys.stderr.write(f"Connecting to SB Core: {sb_ip}:{sb_port}, timeout is {timeout}")
+            if self.params.debug:
+                logger.debug("Connecting to SB Core: %s:%s, timeout is %s" % (sb_ip, sb_port, timeout))
+            else:
+                logger.info("Connecting to SB Core: %s:%s, timeout is %s" % (sb_ip, sb_port, timeout))
             reactor.connectTCP(sb_ip, sb_port, factory, timeout)
         else:
             raise Exception("Unknown scheme:  %s" % self.params.get_scheme())
@@ -55,8 +61,8 @@ class MonitorCore(object):
             # DNS
             try:
                 dnsobj = DNSclient(job)
-            except:
-                sys.stderr.write("Job %s: Failure starting job %s:\n" % (job_id, job.get_json_str()))
+            except Exception as e:
+                logger.error("Job %s: Failure starting job %s: %s" % (job_id, job.get_json_str(), e))
                 traceback.print_tb()
             # Execute the query
             query_d = dnsobj.query()
@@ -169,7 +175,8 @@ class MonitorCore(object):
         proto = service.get_proto()
         port = service.get_port()
         service.pass_conn()
-        sys.stderr.write("Job %s:  SSH (%s/%s) passed. %s\nNagios result: %s" % (jobid, port, proto, result, client_obj.data))
+        logger.info("Job %s:  SSH (%s/%s) passed." % (jobid, port, proto))
+        logger.debug("Nagios result: %s" % client_obj.data)
         del client_obj
 
     def service_fail(self, failure, job, client_obj, service):
@@ -177,7 +184,8 @@ class MonitorCore(object):
         proto = service.get_proto()
         port = service.get_port()
         jobid = job.get_job_id()
-        sys.stderr.write("Job %s:  SSH %s/%s failed:\n\t%s\n%s\n" % (jobid, port, proto, failure, client_obj.data))
+        logger.warning("Job %s:  SSH %s/%s failed: %s" % (jobid, port, proto, failure))
+        logger.debug("SBE result: %s" % client_obj.data)
         del client_obj
 
     def ftp_fail(self, failure, service, job_id):
@@ -255,7 +263,7 @@ if __name__=="__main__":
         check_dir(dir)
     #log.startLogging(open('log/MonitorCore.log', 'w'))
     syslog.startLogging(prefix="Scorebot")
-    sys.stderr.write("Starting Adjudicator")
+    logger.info("Starting Adjudicator")
     params = Parameters()
     jobs = Jobs()
     mon_obj = MonitorCore(params, jobs)
