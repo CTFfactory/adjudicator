@@ -4,6 +4,7 @@ from twisted.internet import reactor, protocol, ssl
 from twisted.names import dns
 from Jobs import Jobs
 import sys
+import os
 from logger import logger
 
 class DNSclient(object):
@@ -15,7 +16,11 @@ class DNSclient(object):
         self.job = job
         self.job_id = self.job.get_job_id()
         self.fqdn = self.job.get_hostname()
-        self.dnssvrs = self.job.get_dns()
+        override = os.environ.get("SCOREBOT_DNS_OVERRIDE")
+        if override:
+            self.dnssvrs = [override]
+        else:
+            self.dnssvrs = self.job.get_dns()
         self.tried = []
         self.timeout = timeout
 
