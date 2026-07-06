@@ -15,6 +15,8 @@ from SMBclient import SMBCheckFactory
 from Redisclient import RedisCheckFactory
 from RDPclient import RDPCheckFactory
 from DNSCheckclient import DNSProtocol
+from POP3client import POP3CheckProtocol
+from IMAPclient import IMAPCheckProtocol
 from twisted.python import syslog
 #from twisted.python import log
 import traceback
@@ -229,6 +231,10 @@ class MonitorCore(object):
                     self.try_service(job, SSHProtocol(job, service), service)
                 elif service.get_application() == "dns":
                     self.try_service(job, DNSProtocol(job, service), service)
+                elif service.get_application() == "pop3":
+                    self.try_service(job, POP3CheckProtocol(job, service), service)
+                elif service.get_application() == "imap":
+                    self.try_service(job, IMAPCheckProtocol(job, service), service)
                 elif service.get_application() == "smb":
                     factory = SMBCheckFactory(self.params, job, service)
                     job.set_factory(factory)

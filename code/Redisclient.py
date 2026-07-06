@@ -1,7 +1,5 @@
 #!/usr/bin/env python2
-# Redis PING/PONG protocol checker for the Adjudicator
-# Validates Redis is actually running by sending PING and expecting
-# +PONG or -NOAUTH (both confirm a real Redis instance).
+# Redis PING/PONG and AUTH protocol checker for the Adjudicator
 from twisted.internet import reactor, protocol
 from twisted.internet.defer import Deferred
 from GenSocket import GenCoreFactory
@@ -9,13 +7,13 @@ import time
 import sys
 from logger import logger
 
-
 class RedisClient(protocol.Protocol):
 
     def __init__(self, factory):
         self.factory = factory
         self.job_id = self.factory.get_job_id()
         self.recv = b''
+        self.state = 'INIT'
 
     def TimedOut(self):
         self.transport.loseConnection()
@@ -25,39 +23,54 @@ class RedisClient(protocol.Protocol):
         logger.info("Job %s: Redis connection made to %s:%s" % (
             self.job_id, self.factory.get_ip(), self.factory.get_port()))
         reactor.callLater(self.factory.get_timeout(), self.TimedOut)
-        # Send Redis PING command using inline format
-        self.transport.write(b'PING\r\n')
+
+        # Get credentials
+        auth = self.factory.service.get_auth() if self.factory.service else None
+        self.password = auth.get("password", "") if auth else ""
+
+        if self.password:
+            self.state = 'AUTHING'
+            self.transport.write(b'AUTH %s\r\n' % self.password)
+        else:
+            self.state = 'PINGING'
+            self.transport.write(b'PING\r\n')
 
     def dataReceived(self, data):
         self.recv += data
         response = self.recv.decode('utf-8', errors='replace')
-        # Redis responds with +PONG\r\n for an unauthenticated PING
-        # or -NOAUTH Authentication required.\r\n if auth is enabled
-        # Both responses confirm a real Redis server is running
-        if '+PONG' in response:
-            logger.info("Job %s: Redis PONG received from %s" % (
-                self.job_id, self.factory.get_ip()))
-            self.factory.add_data("Redis OK - PONG received\r\n")
-            self.transport.loseConnection()
-        elif '-NOAUTH' in response:
-            logger.info("Job %s: Redis NOAUTH received from %s (auth required, server is real)" % (
-                self.job_id, self.factory.get_ip()))
-            self.factory.add_data("Redis OK - NOAUTH received (server confirmed)\r\n")
-            self.transport.loseConnection()
-        elif '-' in response:
-            # Any Redis error response still confirms it's Redis
-            logger.info("Job %s: Redis error response from %s: %s" % (
-                self.job_id, self.factory.get_ip(), response.strip()))
-            self.factory.add_data("Redis OK - error response received (server confirmed)\r\n")
-            self.transport.loseConnection()
-        elif len(self.recv) > 256:
-            # Got a lot of data but no Redis-like response
-            logger.warning("Job %s: Invalid Redis response from %s" % (
-                self.job_id, self.factory.get_ip()))
-            self.factory.add_data("Redis FAIL - no valid Redis response\r\n")
-            self.factory.add_fail("invalid Redis response")
-            self.transport.loseConnection()
 
+        if self.state == 'AUTHING':
+            if '+OK' in response:
+                self.recv = b''
+                self.state = 'PINGING'
+                self.transport.write(b'PING\r\n')
+            elif '-' in response:
+                logger.warning("Job %s: Redis authentication failed for %s: %s" % (
+                    self.job_id, self.factory.get_ip(), response.strip()))
+                self.factory.add_data("Redis FAIL - authentication failed\r\n")
+                self.factory.add_fail("authentication failed")
+                self.transport.loseConnection()
+        elif self.state == 'PINGING':
+            if '+PONG' in response:
+                logger.info("Job %s: Redis PONG received from %s" % (
+                    self.job_id, self.factory.get_ip()))
+                self.factory.add_data("Redis OK - PONG received\r\n")
+                self.transport.loseConnection()
+            elif '-NOAUTH' in response:
+                logger.warning("Job %s: Redis check failed - authentication required by server but not provided by team" % self.job_id)
+                self.factory.add_data("Redis FAIL - auth required\r\n")
+                self.factory.add_fail("authentication required")
+                self.transport.loseConnection()
+            elif '-' in response:
+                logger.warning("Job %s: Redis ping error response from %s: %s" % (
+                    self.job_id, self.factory.get_ip(), response.strip()))
+                self.factory.add_data("Redis FAIL - error response\r\n")
+                self.factory.add_fail("ping error response")
+                self.transport.loseConnection()
+        
+        if len(self.recv) > 512:
+            self.factory.add_fail("response buffer overflow")
+            self.transport.loseConnection()
 
 class RedisCheckFactory(GenCoreFactory):
 
@@ -88,7 +101,7 @@ class RedisCheckFactory(GenCoreFactory):
         logger.info("Job %s: Redis check passed for %s" % (self.job_id, self.ip))
 
     def service_fail(self, failure):
-        self.service.fail_conn(failure)
+        self.service.fail_login()
         logger.warning("Job %s: Redis check failed for %s" % (self.job_id, self.ip))
 
     def clientConnectionFailed(self, connector, reason):
@@ -96,13 +109,7 @@ class RedisCheckFactory(GenCoreFactory):
         if self.params.debug:
             logger.warning("Job %s: Redis clientConnectionFailed: %s" % (
                 self.job.get_job_id(), reason))
-        conn_time = None
-        if self.start:
-            conn_time = self.end - self.start
-        else:
-            self.service.timeout(self.data)
-            return
-        self.service.fail_conn(reason.getErrorMessage(), self.data)
+        self.service.fail_login()
         self.deferreds[connector].errback(reason)
 
     def clientConnectionLost(self, connector, reason):
@@ -113,13 +120,13 @@ class RedisCheckFactory(GenCoreFactory):
         if self.data:
             self.service.set_data(self.data)
         if self.fail and self.reason:
-            self.service.fail_conn(self.reason, self.data)
+            self.service.fail_login()
             self.deferreds[connector].errback(reason)
         elif self.fail and not self.reason:
-            self.service.fail_conn(reason.getErrorMessage(), self.data)
+            self.service.fail_login()
             self.deferreds[connector].errback(reason)
         elif "non-clean" in reason.getErrorMessage():
-            self.service.fail_conn("other", self.data)
+            self.service.fail_login()
             self.deferreds[connector].errback(reason)
         else:
             self.service.pass_conn()
