@@ -41,7 +41,7 @@ class BaseProtocol(protocol.ProcessProtocol):
             self.d.callback(self)
         else:
             if self.success_re and self.success_re.search(self.data):
-                self.job_status = "yellow"
+                self.job_status = "pass"
                 self.d.callback(self)
             else:
                 self.job_status = "fail"

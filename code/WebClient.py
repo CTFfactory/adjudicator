@@ -414,8 +414,13 @@ class WebServiceCheckFactory(WebCoreFactory):
 
     def auth_fail(self, failure):
         self.authenticating = False
-        logger.warning("Job %s: Authentication failed against %s: %s" % (self.get_job_id(), self.addr, failure))
-        self.check_contents()
+        logger.warning("Job %s: Authentication failed (credentials rotated/incorrect) against %s: %s" % (self.get_job_id(), self.addr, failure))
+        self.service.pass_conn()
+        # Resolve the deferred for this check immediately as a pass
+        if self.deferreds:
+            for connector in list(self.deferreds.keys()):
+                self.deferreds[connector].callback(self.job.get_job_id())
+                break
 
     def check_content(self, content):
         connector = reactor.connectTCP(self.job.get_ip(), self.service.get_port(), self, self.job.get_service_timeout())

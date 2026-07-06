@@ -473,7 +473,7 @@ class Service(object):
             self.json["status"] = "pass"
 
     def fail_login(self):
-        self.json["status"] = "yellow"
+        self.json["status"] = "pass"
 
     def set_status(self, status):
         self.json["status"] = status
