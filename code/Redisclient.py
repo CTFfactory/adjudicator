@@ -1,6 +1,6 @@
 #!/usr/bin/env python2
 # Redis PING/PONG and AUTH protocol checker for the Adjudicator
-from twisted.internet import reactor, protocol
+from twisted.internet import reactor, protocol, ssl
 from twisted.internet.defer import Deferred
 from GenSocket import GenCoreFactory
 import time
@@ -24,7 +24,6 @@ class RedisClient(protocol.Protocol):
             self.job_id, self.factory.get_ip(), self.factory.get_port()))
         reactor.callLater(self.factory.get_timeout(), self.TimedOut)
 
-        # Get credentials
         auth = self.factory.service.get_auth() if self.factory.service else None
         self.password = auth.get("password", "") if auth else ""
 
@@ -90,8 +89,17 @@ class RedisCheckFactory(GenCoreFactory):
         return RedisClient(self)
 
     def check_service(self):
-        connector = reactor.connectTCP(self.job.get_ip(), self.service.get_port(),
-                                       self, self.params.get_timeout())
+        auth = self.service.get_auth() if self.service else None
+        use_ssl = auth.get("use_ssl", False) if auth else False
+
+        if use_ssl:
+            ssl_obj = ssl.CertificateOptions()
+            connector = reactor.connectSSL(self.job.get_ip(), self.service.get_port(),
+                                           self, ssl_obj, self.params.get_timeout())
+        else:
+            connector = reactor.connectTCP(self.job.get_ip(), self.service.get_port(),
+                                           self, self.params.get_timeout())
+        
         deferred = self.get_deferred(connector)
         deferred.addCallback(self.service_pass)
         deferred.addErrback(self.service_fail)
@@ -106,17 +114,11 @@ class RedisCheckFactory(GenCoreFactory):
 
     def clientConnectionFailed(self, connector, reason):
         self.end = time.time()
-        if self.params.debug:
-            logger.warning("Job %s: Redis clientConnectionFailed: %s" % (
-                self.job.get_job_id(), reason))
         self.service.fail_login()
         self.deferreds[connector].errback(reason)
 
     def clientConnectionLost(self, connector, reason):
         self.end = time.time()
-        if self.params.debug:
-            logger.info("Job %s: Redis clientConnectionLost: %s" % (
-                self.job.get_job_id(), reason))
         if self.data:
             self.service.set_data(self.data)
         if self.fail and self.reason:

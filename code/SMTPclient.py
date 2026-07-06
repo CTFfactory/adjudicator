@@ -3,13 +3,16 @@ import socket
 from twisted.internet.threads import deferToThread
 from logger import logger
 
-def run_smtp_check(ip, port, username, password, timeout):
+def run_smtp_check(ip, port, username, password, use_ssl, timeout):
     socket.setdefaulttimeout(timeout)
     client = None
     try:
-        client = smtplib.SMTP(ip, port)
+        if use_ssl:
+            client = smtplib.SMTP_SSL(ip, port)
+        else:
+            client = smtplib.SMTP(ip, port)
         client.ehlo()
-        if client.has_extn("starttls"):
+        if not use_ssl and client.has_extn("starttls"):
             client.starttls()
             client.ehlo()
         client.login(username, password)
@@ -23,11 +26,14 @@ def run_smtp_check(ip, port, username, password, timeout):
                 pass
         raise Exception("SMTP check failed: %s" % e)
 
-def run_smtp_conn_only(ip, port, timeout):
+def run_smtp_conn_only(ip, port, use_ssl, timeout):
     socket.setdefaulttimeout(timeout)
     client = None
     try:
-        client = smtplib.SMTP(ip, port)
+        if use_ssl:
+            client = smtplib.SMTP_SSL(ip, port)
+        else:
+            client = smtplib.SMTP(ip, port)
         client.ehlo()
         client.quit()
         return "SMTP connection successful"
@@ -54,11 +60,12 @@ class SMTPFactory(object):
         auth = self.service.get_auth()
         username = auth.get("username", "") if auth else ""
         password = auth.get("password", "") if auth else ""
+        use_ssl = auth.get("use_ssl", False) if auth else False
 
         if not username or not password:
-            d = deferToThread(run_smtp_conn_only, self.ip, self.port, self.timeout)
+            d = deferToThread(run_smtp_conn_only, self.ip, self.port, use_ssl, self.timeout)
         else:
-            d = deferToThread(run_smtp_check, self.ip, self.port, username, password, self.timeout)
+            d = deferToThread(run_smtp_check, self.ip, self.port, username, password, use_ssl, self.timeout)
         
         d.addCallback(self.service_pass)
         d.addErrback(self.service_fail)

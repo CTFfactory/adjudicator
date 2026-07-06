@@ -86,7 +86,10 @@ class SMBSubprocessProtocol(BaseProtocol):
         auth = self.service.get_auth()
         username = auth.get("username", "")
         password = auth.get("password", "")
+        domain = auth.get("domain", "")
         args = [self.prog, "//" + self.ipaddr + "/IPC$", "-U", username + "%" + password, "-p", str(self.service.get_port()), "-c", "exit"]
+        if domain:
+            args += ["-W", domain]
         reactor.spawnProcess(self, self.prog, args)
 
 
@@ -129,7 +132,7 @@ class SMBCheckFactory(GenCoreFactory):
         logger.info("Job %s: SMB check passed for %s" % (self.job_id, self.ip))
 
     def service_fail(self, failure):
-        self.service.fail_login()
+        self.service.fail_conn(failure)
         logger.warning("Job %s: SMB check failed for %s" % (self.job_id, self.ip))
 
     def subprocess_pass(self, proto):

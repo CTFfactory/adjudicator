@@ -4,6 +4,7 @@ from twisted.internet.defer import Deferred
 from twisted.internet.threads import deferToThread
 from BaseClient import BaseProtocol
 from logger import logger
+from io import StringIO
 import sys
 import re
 
@@ -13,11 +14,26 @@ try:
 except ImportError:
     HAS_PARAMIKO = False
 
-def run_ssh_auth_check(ip, port, username, password, timeout):
+def run_ssh_auth_check(ip, port, username, password, private_key, timeout):
     client = paramiko.SSHClient()
     client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     try:
-        client.connect(ip, port=port, username=username, password=password, timeout=timeout)
+        if private_key:
+            pkey = None
+            # Handle unicode key string for Python 2
+            key_io = StringIO(unicode(private_key))
+            for cls in (paramiko.RSAKey, paramiko.Ed25519Key, paramiko.ECDSAKey, paramiko.DSSKey):
+                try:
+                    key_io.seek(0)
+                    pkey = cls.from_private_key(key_io)
+                    break
+                except Exception:
+                    continue
+            if not pkey:
+                raise Exception("Invalid or unsupported SSH private key format")
+            client.connect(ip, port=port, username=username, pkey=pkey, timeout=timeout)
+        else:
+            client.connect(ip, port=port, username=username, password=password, timeout=timeout)
         client.close()
         return "SSH login successful"
     except Exception as e:
@@ -39,9 +55,10 @@ class SSHProtocol(BaseProtocol):
         auth = self.service.get_auth() if self.service else None
         username = auth.get("username", "") if auth else ""
         password = auth.get("password", "") if auth else ""
+        private_key = auth.get("private_key", "") if auth else ""
 
-        if username and password and HAS_PARAMIKO:
-            d = deferToThread(run_ssh_auth_check, self.ipaddr, self.service.get_port(), username, password, 10)
+        if username and (password or private_key) and HAS_PARAMIKO:
+            d = deferToThread(run_ssh_auth_check, self.ipaddr, self.service.get_port(), username, password, private_key, 10)
             d.addCallback(self.ssh_success)
             d.addErrback(self.ssh_fail)
         else:

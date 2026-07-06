@@ -4,11 +4,14 @@ from twisted.internet.defer import Deferred
 from twisted.internet.threads import deferToThread
 from logger import logger
 
-def run_imap_check(ip, port, username, password, timeout):
+def run_imap_check(ip, port, username, password, use_ssl, timeout):
     socket.setdefaulttimeout(timeout)
     client = None
     try:
-        client = imaplib.IMAP4(ip, port)
+        if use_ssl:
+            client = imaplib.IMAP4_SSL(ip, port)
+        else:
+            client = imaplib.IMAP4(ip, port)
         client.login(username, password)
         client.logout()
         return "IMAP login successful"
@@ -37,20 +40,24 @@ class IMAPCheckProtocol(object):
         auth = self.service.get_auth()
         username = auth.get("username", "") if auth else ""
         password = auth.get("password", "") if auth else ""
+        use_ssl = auth.get("use_ssl", False) if auth else False
 
         if not username or not password:
-            d = deferToThread(self.run_imap_conn_only)
+            d = deferToThread(self.run_imap_conn_only, use_ssl)
         else:
-            d = deferToThread(run_imap_check, self.ip, self.port, username, password, self.timeout)
+            d = deferToThread(run_imap_check, self.ip, self.port, username, password, use_ssl, self.timeout)
         
         d.addCallback(self.success)
         d.addErrback(self.fail)
 
-    def run_imap_conn_only(self):
+    def run_imap_conn_only(self, use_ssl):
         socket.setdefaulttimeout(self.timeout)
         client = None
         try:
-            client = imaplib.IMAP4(self.ip, self.port)
+            if use_ssl:
+                client = imaplib.IMAP4_SSL(self.ip, self.port)
+            else:
+                client = imaplib.IMAP4(self.ip, self.port)
             client.logout()
             return "IMAP connection successful"
         except Exception as e:

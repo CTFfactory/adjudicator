@@ -4,11 +4,14 @@ from twisted.internet.defer import Deferred
 from twisted.internet.threads import deferToThread
 from logger import logger
 
-def run_pop_check(ip, port, username, password, timeout):
+def run_pop_check(ip, port, username, password, use_ssl, timeout):
     socket.setdefaulttimeout(timeout)
     client = None
     try:
-        client = poplib.POP3(ip, port)
+        if use_ssl:
+            client = poplib.POP3_SSL(ip, port)
+        else:
+            client = poplib.POP3(ip, port)
         client.user(username)
         client.pass_(password)
         client.quit()
@@ -38,20 +41,24 @@ class POP3CheckProtocol(object):
         auth = self.service.get_auth()
         username = auth.get("username", "") if auth else ""
         password = auth.get("password", "") if auth else ""
+        use_ssl = auth.get("use_ssl", False) if auth else False
 
         if not username or not password:
-            d = deferToThread(self.run_pop_conn_only)
+            d = deferToThread(self.run_pop_conn_only, use_ssl)
         else:
-            d = deferToThread(run_pop_check, self.ip, self.port, username, password, self.timeout)
+            d = deferToThread(run_pop_check, self.ip, self.port, username, password, use_ssl, self.timeout)
         
         d.addCallback(self.success)
         d.addErrback(self.fail)
 
-    def run_pop_conn_only(self):
+    def run_pop_conn_only(self, use_ssl):
         socket.setdefaulttimeout(self.timeout)
         client = None
         try:
-            client = poplib.POP3(self.ip, self.port)
+            if use_ssl:
+                client = poplib.POP3_SSL(self.ip, self.port)
+            else:
+                client = poplib.POP3(self.ip, self.port)
             client.quit()
             return "POP3 connection successful"
         except Exception as e:
