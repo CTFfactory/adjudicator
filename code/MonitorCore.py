@@ -11,6 +11,10 @@ from SMTPclient import SMTPFactory
 from SSHclient import SSHProtocol
 from MySQLclient import MySQLProtocol
 from HTTPclient import HTTPProtocol
+from SMBclient import SMBCheckFactory
+from Redisclient import RedisCheckFactory
+from RDPclient import RDPCheckFactory
+from DNSCheckclient import DNSProtocol
 from twisted.python import syslog
 #from twisted.python import log
 import traceback
@@ -174,17 +178,22 @@ class MonitorCore(object):
         jobid = job.get_job_id()
         proto = service.get_proto()
         port = service.get_port()
-        service.pass_conn()
-        logger.info("Job %s:  SSH (%s/%s) passed." % (jobid, port, proto))
+        status = getattr(client_obj, "job_status", "pass")
+        service.set_status(status)
+        logger.info("Job %s: %s (%s/%s) passed/warning with status %s." % (jobid, service.get_application().upper(), port, proto, status))
         logger.debug("Nagios result: %s" % client_obj.data)
         del client_obj
 
     def service_fail(self, failure, job, client_obj, service):
-        service.fail_conn(client_obj.data)
+        status = getattr(client_obj, "job_status", "fail")
+        if status == "fail":
+            service.fail_conn(client_obj.data)
+        else:
+            service.set_status(status)
         proto = service.get_proto()
         port = service.get_port()
         jobid = job.get_job_id()
-        logger.warning("Job %s:  SSH %s/%s failed: %s" % (jobid, port, proto, failure))
+        logger.warning("Job %s: %s %s/%s failed/warning: %s" % (jobid, service.get_application().upper(), port, proto, failure))
         logger.debug("SBE result: %s" % client_obj.data)
         del client_obj
 
@@ -215,9 +224,23 @@ class MonitorCore(object):
                     job.set_factory(factory)
                     factory.check_service()
                 elif service.get_application() == "mysql":
-                    self.try_service(job, MySQLProtocol(job), service)
+                    self.try_service(job, MySQLProtocol(job, service), service)
                 elif service.get_application() == "ssh":
-                    self.try_service(job, SSHProtocol(job), service)
+                    self.try_service(job, SSHProtocol(job, service), service)
+                elif service.get_application() == "dns":
+                    self.try_service(job, DNSProtocol(job, service), service)
+                elif service.get_application() == "smb":
+                    factory = SMBCheckFactory(self.params, job, service)
+                    job.set_factory(factory)
+                    factory.check_service()
+                elif service.get_application() == "redis":
+                    factory = RedisCheckFactory(self.params, job, service)
+                    job.set_factory(factory)
+                    factory.check_service()
+                elif service.get_application() == "rdp":
+                    factory = RDPCheckFactory(self.params, job, service)
+                    job.set_factory(factory)
+                    factory.check_service()
                 else:
                     factory = GenCheckFactory(self.params, job, service)
                     connector = reactor.connectTCP(job.get_ip(), service.get_port(), factory, self.params.get_timeout())

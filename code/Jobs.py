@@ -471,6 +471,9 @@ class Service(object):
     def pass_conn(self):
         self.json["status"] = "pass"
 
+    def set_status(self, status):
+        self.json["status"] = status
+
     def fail_conn(self, failure, data=None):
         if "timeout" in failure:
             self.json["status"] = "timeout"

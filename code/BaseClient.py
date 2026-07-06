@@ -6,8 +6,9 @@ import re
 
 class BaseProtocol(protocol.ProcessProtocol):
 
-    def __init__(self, job):
+    def __init__(self, job, service=None):
         self.job = job
+        self.service = service
         self.ipaddr = self.job.get_ip()
         self.data = ""
         self.success_re = None
@@ -16,19 +17,31 @@ class BaseProtocol(protocol.ProcessProtocol):
         self.prog = ""
 
     def connect(self):
-        reactor.spawnProcess(self, self.prog, [self.prog, self.ipaddr])
+        # Default behavior: use -H for host
+        args = [self.prog, "-H", self.ipaddr]
+        reactor.spawnProcess(self, self.prog, args)
 
     def getDeferred(self):
         return self.d
 
     def outConnectionLost(self):
-        self.success_m = self.success_re.search(self.data)
-        self.failure_m = self.refused_re.search(self.data)
-        if self.success_m:
-            self.success = self.success_m.group()
+        pass
+
+    def processEnded(self, reason):
+        exit_code = 0
+        if hasattr(reason.value, 'exitCode') and reason.value.exitCode is not None:
+            exit_code = reason.value.exitCode
+
+        self.exit_code = exit_code
+        if exit_code == 0:
+            self.job_status = "pass"
+            self.d.callback(self)
+        elif exit_code == 1:
+            self.job_status = "yellow"
             self.d.callback(self)
         else:
-            self.d.errback()
+            self.job_status = "fail"
+            self.d.errback(reason)
 
     def outReceived(self, data):
         if type(data) == type(b'a'):
