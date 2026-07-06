@@ -40,12 +40,8 @@ class BaseProtocol(protocol.ProcessProtocol):
             self.job_status = "yellow"
             self.d.callback(self)
         else:
-            if self.success_re and self.success_re.search(self.data):
-                self.job_status = "pass"
-                self.d.callback(self)
-            else:
-                self.job_status = "fail"
-                self.d.errback(reason)
+            self.job_status = "fail"
+            self.d.errback(reason)
 
     def outReceived(self, data):
         if type(data) == type(b'a'):
