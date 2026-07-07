@@ -87,7 +87,7 @@ class MonitorCore(object):
 
     def finish_jobs(self):
         done_jobs = self.jobs.find_done_jobs()
-        for job_id in done_jobs:
+        for job_id in list(done_jobs):
             job = self.jobs.finish_job(job_id, "job finished")
             self.post_job(job)
         reactor.callLater(0.1, self.finish_jobs)

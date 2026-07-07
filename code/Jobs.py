@@ -47,7 +47,7 @@ class Jobs(object):
                 self.proc.remove(job_id)
             else:
                 logger.error("WTF? Job %s is done but not in self.proc!" % job_id)
-        return self.done
+        return list(self.done)
 
     def finish_job(self, job_id, reason):
         if "DNS failed" in reason:
