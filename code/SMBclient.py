@@ -10,38 +10,26 @@ import sys
 from logger import logger
 
 def build_smb2_negotiate():
-    """Build a minimal SMB2 Negotiate Protocol Request packet."""
-    smb2_header = b'\xfeSMB'           # Protocol ID
-    smb2_header += struct.pack('<H', 64)  # Structure Size
-    smb2_header += struct.pack('<H', 0)   # Credit Charge
-    smb2_header += struct.pack('<L', 0)   # Status
-    smb2_header += struct.pack('<H', 0)   # Command: Negotiate (0x0000)
-    smb2_header += struct.pack('<H', 0)   # Credit Request
-    smb2_header += struct.pack('<L', 0)   # Flags
-    smb2_header += struct.pack('<L', 0)   # Next Command
-    smb2_header += struct.pack('<Q', 1)   # Message ID
-    smb2_header += struct.pack('<L', 0)   # Reserved
-    smb2_header += struct.pack('<L', 0)   # Tree ID
-    smb2_header += struct.pack('<Q', 0)   # Session ID
-    smb2_header += b'\x00' * 16          # Signature
+    """Build a multi-protocol negotiate request packet to support both SMB1 and SMB2+."""
+    dialects = [
+        b'PC NETWORK PROGRAM 1.0',
+        b'LANMAN1.0',
+        b'LM1.2X002',
+        b'LANMAN2.1',
+        b'NT LM 0.12',
+        b'SMB 2.002',
+        b'SMB 2.???',
+    ]
+    data = b''
+    for d in dialects:
+        data += b'\x02' + d + b'\x00'
 
-    negotiate_body = struct.pack('<H', 36)  # Structure Size
-    negotiate_body += struct.pack('<H', 2)  # Dialect Count
-    negotiate_body += struct.pack('<H', 1)  # Security Mode
-    negotiate_body += struct.pack('<H', 0)  # Reserved
-    negotiate_body += struct.pack('<L', 0)  # Capabilities
-    negotiate_body += b'\x00' * 16         # Client GUID
-    negotiate_body += struct.pack('<L', 0)  # Negotiate Context Offset
-    negotiate_body += struct.pack('<H', 0)  # Negotiate Context Count
-    negotiate_body += struct.pack('<H', 0)  # Reserved2
-    negotiate_body += struct.pack('<H', 0x0202)  # SMB 2.0.2
-    negotiate_body += struct.pack('<H', 0x0210)  # SMB 2.1
+    header = b'\xffSMB\x72' + struct.pack('<L', 0) + b'\x18\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+    body = struct.pack('<B', 0) + struct.pack('<H', len(data)) + data
+    pkt = header + body
+    netbios = b'\x00' + struct.pack('>I', len(pkt))[1:]
+    return netbios + pkt
 
-    smb2_packet = smb2_header + negotiate_body
-    netbios_header = b'\x00'
-    netbios_header += struct.pack('>I', len(smb2_packet))[1:]
-
-    return netbios_header + smb2_packet
 
 
 class SMBClient(protocol.Protocol):
