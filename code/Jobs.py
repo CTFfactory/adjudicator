@@ -504,7 +504,7 @@ class Service(object):
                 data_file.write(data)
                 data = data.encode('utf-8')
             else:
-                data_file.write(data.decode('utf-8'))
+                data_file.write(data.decode('utf-8', errors='replace'))
             data_file.close()
         
         if type(data) == type('a'):
