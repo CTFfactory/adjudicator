@@ -19,7 +19,7 @@ class Parameters(object):
         self.headers = {}
         self.headers["Connection"] = "keep-alive"
         #self.headers["Host"] = self.sb_ip
-        self.headers["Accept-Encoding"] = "gzip, deflate"
+        self.headers["Accept-Encoding"] = "identity"
         self.headers["User-Agent"] = "Scorebot Monitor/3.0.0"
         self.headers["SBE-AUTH"] = self.sbe_auth
         self.headers["Accept"] = "*/*"

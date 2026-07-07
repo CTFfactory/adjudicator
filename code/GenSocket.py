@@ -17,6 +17,7 @@ class GenClient(protocol.Protocol):
         reactor.callLater(self.factory.get_timeout(), self.TimedOut)
         # todo - add the ability to pass data for the client to transmit to the server
         self.request = None
+        self.recv = b""
 
     def TimedOut(self):
         self.factory.add_fail("timeout")
@@ -75,7 +76,10 @@ class GenCoreFactory(protocol.ClientFactory):
         return GenClient(self)
 
     def add_data(self, data):
-        self.data += data
+        if isinstance(data, bytes):
+            self.data += data.decode('utf-8', errors='replace')
+        else:
+            self.data += data
 
     def add_fail(self, reason):
         self.reason = reason

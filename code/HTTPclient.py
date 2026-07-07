@@ -28,7 +28,7 @@ class HTTPProtocol(protocol.ProcessProtocol):
 
     def outReceived(self, data):
         if type(data) == type(b'a'):
-            self.data += data.decode('utf-8')+"\r\n"
+            self.data += data.decode('utf-8', errors='replace')+"\r\n"
         else:
             self.data += data
 

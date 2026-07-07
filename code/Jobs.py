@@ -143,7 +143,7 @@ class Job(object):
         self.headers = {}
         self.headers["Connection"] = "keep-alive"
         #self.headers["Host"] = self.sb_ip
-        self.headers["Accept-Encoding"] = "gzip, deflate"
+        self.headers["Accept-Encoding"] = "identity"
         self.headers["User-Agent"] = "Scorebot Monitor/3.0.0"
         self.headers["Accept"] = "*/*"
         self.scheme = "http"
@@ -335,6 +335,9 @@ class Service(object):
                         pages = self.json["content"]["content"]["pages"]
                         for page in pages:
                             self.contents.append(Content(page, self.job))
+                    elif "auth" in self.json["content"]["content"] and len(self.json["content"]["content"]) == 1:
+                        # Only authentication info, no actual content verification files/pages needed
+                        pass
                     else:
                         raise Exception ("Job %s: Unknown content type %s for job" % (self.job.get_job_id(), "|".join(list(self.json["content"]["content"].keys()))))
                 else:
@@ -348,7 +351,7 @@ class Service(object):
         # Default values
         self.headers["Connection"] = "keep-alive"
         #self.headers["Host"] = self.sb_ip
-        self.headers["Accept-Encoding"] = "gzip, deflate"
+        self.headers["Accept-Encoding"] = "identity"
         self.headers["User-Agent"] = "Scorebot Monitor/3.0.0"
         self.headers["Accept"] = "*/*"
         # temp variable until JSON is updated
@@ -630,7 +633,7 @@ class Content(object):
         self.headers = {}
         # Default values
         self.headers["Connection"] = "keep-alive"
-        self.headers["Accept-Encoding"] = "gzip, deflate"
+        self.headers["Accept-Encoding"] = "identity"
         self.headers["User-Agent"] = "Scorebot Monitor/3.0.0"
         self.headers["Accept"] = "*/*"
         self.current_index = 0

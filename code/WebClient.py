@@ -135,8 +135,8 @@ class WebClient(protocol.Protocol):
     def dataReceived(self, data):
         logger.debug("Job %s: Received %d bytes" % (self.job_id, len(data)))
         data_len = len(data)
-        self.recv += data.decode('utf-8')
-        self.factory.add_data(data.decode('utf-8'))
+        self.recv += data.decode('utf-8', errors='replace')
+        self.factory.add_data(data.decode('utf-8', errors='replace'))
         if self.factory.get_debug():
             logger.debug("Job %s: ConnID %s: Received:\n %s" % (self.job_id, self.factory.get_conn_id(), self.recv))
         self.parser.execute(data, data_len)
@@ -242,7 +242,7 @@ class WebCoreFactory(GenCoreFactory):
         #sys.stderr.write("self.body: ")
         #print(type(self.body))
         if type(body) == type(b'a'):
-            self.body += body.decode('utf-8')+"\r\n"
+            self.body += body.decode('utf-8', errors='replace')+"\r\n"
         else:
             self.body += body
 

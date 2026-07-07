@@ -69,10 +69,10 @@ class FTP_client(object):
     def checkBuffer(self, result, bufferProtocol):
         found_data = bufferProtocol.buffer.getvalue()
         logger.debug("Got: %s" % result)
-        logger.debug("Also got: |%s|" % found_data.decode('utf-8').strip("\r\n"))
+        logger.debug("Also got: |%s|" % found_data.decode('utf-8', errors='replace').strip("\r\n"))
         for content in self.service.get_contents():
             logger.debug("Checking against: |%s|" % content.get_data())
-            if found_data.decode('utf-8').strip("\r\n") == content.get_data():
+            if found_data.decode('utf-8', errors='replace').strip("\r\n") == content.get_data():
                 logger.info("Job ID %s: content check passed" % self.job.get_job_id())
                 content.success()
             else:
