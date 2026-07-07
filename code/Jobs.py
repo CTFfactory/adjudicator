@@ -338,6 +338,9 @@ class Service(object):
                     elif "auth" in self.json["content"]["content"] and len(self.json["content"]["content"]) == 1:
                         # Only authentication info, no actual content verification files/pages needed
                         pass
+                    elif not self.json["content"]["content"]:
+                        # Empty content verification needed
+                        pass
                     else:
                         raise Exception ("Job %s: Unknown content type %s for job" % (self.job.get_job_id(), "|".join(list(self.json["content"]["content"].keys()))))
                 else:
