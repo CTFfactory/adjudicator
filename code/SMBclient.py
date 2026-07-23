@@ -29,7 +29,7 @@ def build_smb2_negotiate():
     )
 
     # 2. Build SMB2 Negotiate Request (36 bytes + dialects)
-    dialects = [0x0202, 0x0210]  # SMB 2.0.2, SMB 2.1
+    dialects = [0x0202, 0x0210, 0x0300, 0x0302]  # SMB 2.0.2, 2.1, 3.0, 3.0.2
     req = struct.pack(
         '<HHHHI16sIHH',
         36,              # StructureSize
