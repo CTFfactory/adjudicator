@@ -10,23 +10,42 @@ import sys
 from logger import logger
 
 def build_smb2_negotiate():
-    """Build a multi-protocol negotiate request packet to support both SMB1 and SMB2+."""
-    dialects = [
-        b'PC NETWORK PROGRAM 1.0',
-        b'LANMAN1.0',
-        b'LM1.2X002',
-        b'LANMAN2.1',
-        b'NT LM 0.12',
-        b'SMB 2.002',
-        b'SMB 2.???',
-    ]
-    data = b''
-    for d in dialects:
-        data += b'\x02' + d + b'\x00'
+    """Build a pure SMB2/SMB3 negotiate request packet to support modern Windows and Samba."""
+    # 1. Build SMB2 Header (64 bytes)
+    header = struct.pack(
+        '<4sHHIHHIIQQQ16s',
+        b'\xfeSMB',       # ProtocolId
+        64,              # StructureSize
+        0,               # CreditCharge
+        0,               # Status
+        0,               # Command (Negotiate)
+        31,              # CreditRequest
+        0,               # Flags
+        0,               # NextCommand
+        0,               # MessageId
+        0,               # Reserved/AsyncId
+        0,               # SessionId
+        b'\x00' * 16     # Signature
+    )
 
-    header = b'\xffSMB\x72' + struct.pack('<L', 0) + b'\x18\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
-    body = struct.pack('<B', 0) + struct.pack('<H', len(data)) + data
-    pkt = header + body
+    # 2. Build SMB2 Negotiate Request (36 bytes + dialects)
+    dialects = [0x0202, 0x0210]  # SMB 2.0.2, SMB 2.1
+    req = struct.pack(
+        '<HHHHI16sIHH',
+        36,              # StructureSize
+        len(dialects),   # DialectCount
+        1,               # SecurityMode (Signing enabled)
+        0,               # Reserved
+        0,               # Capabilities
+        b'\x00' * 16,    # ClientGuid
+        0,               # NegotiateContextOffset
+        0,               # NegotiateContextCount
+        0                # Reserved2
+    )
+    req += struct.pack(f'<{len(dialects)}H', *dialects)
+
+    pkt = header + req
+    # NetBIOS Session Header: 1-byte type (0x00), followed by 3-byte length
     netbios = b'\x00' + struct.pack('>I', len(pkt))[1:]
     return netbios + pkt
 
