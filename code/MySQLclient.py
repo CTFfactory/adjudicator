@@ -22,3 +22,24 @@ class MySQLProtocol(BaseProtocol):
             if auth and "username" in auth and "password" in auth:
                 args += ["-u", auth["username"], "-p", auth["password"]]
         reactor.spawnProcess(self, self.prog, args)
+
+    def processEnded(self, reason):
+        exit_code = 0
+        if hasattr(reason.value, 'exitCode') and reason.value.exitCode is not None:
+            exit_code = reason.value.exitCode
+
+        self.exit_code = exit_code
+        auth_enabled = self.job.json.get("authenticated_checks", True) if self.job and hasattr(self.job, 'json') else True
+
+        if not auth_enabled and "Access denied for user" in self.data:
+            self.job_status = "pass"
+            self.d.callback(self)
+        elif exit_code == 0:
+            self.job_status = "pass"
+            self.d.callback(self)
+        elif exit_code == 1:
+            self.job_status = "yellow"
+            self.d.callback(self)
+        else:
+            self.job_status = "fail"
+            self.d.errback(reason)

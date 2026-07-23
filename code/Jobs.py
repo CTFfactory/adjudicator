@@ -407,6 +407,8 @@ class Service(object):
             return False
 
     def get_auth(self):
+        if self.job and hasattr(self.job, 'json') and not self.job.json.get("authenticated_checks", True):
+            return False
         if "content" in self.json:
             if self.json["content"]:
                 if "content" in self.json["content"]:
