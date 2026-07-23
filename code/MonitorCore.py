@@ -266,7 +266,7 @@ class MonitorCore(object):
         logger.info("Job %s:  Service %s/%s passed. %s" % (jobid, port, proto, result))
 
     def gen_service_connect_fail(self, failure, job, service):
-        service.fail_conn(failure)
+        service.fail_conn(failure.getErrorMessage())
         proto = service.get_proto()
         port = service.get_port()
         jobid = job.get_job_id()

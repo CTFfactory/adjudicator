@@ -120,7 +120,7 @@ class SMBCheckFactory(GenCoreFactory):
         logger.info("Job %s: SMB check passed for %s" % (self.job_id, self.ip))
 
     def service_fail(self, failure):
-        self.service.fail_conn(failure)
+        self.service.fail_conn(failure.getErrorMessage())
         logger.warning("Job %s: SMB check failed for %s" % (self.job_id, self.ip))
 
     def subprocess_pass(self, proto):
