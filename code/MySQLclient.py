@@ -31,7 +31,7 @@ class MySQLProtocol(BaseProtocol):
         self.exit_code = exit_code
         auth_enabled = self.job.json.get("authenticated_checks", True) if self.job and hasattr(self.job, 'json') else True
 
-        if not auth_enabled and "Access denied for user" in self.data:
+        if not auth_enabled and "access denied" in self.data.lower():
             self.job_status = "pass"
             self.d.callback(self)
         elif exit_code == 0:

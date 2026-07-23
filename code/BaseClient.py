@@ -49,6 +49,12 @@ class BaseProtocol(protocol.ProcessProtocol):
         else:
             self.data += data
 
+    def errReceived(self, data):
+        if type(data) == type(b'a'):
+            self.data += data.decode('utf-8', errors='replace')+"\r\n"
+        else:
+            self.data += data
+
     def get_recv(self):
         return self.recv
 
