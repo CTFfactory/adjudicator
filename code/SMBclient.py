@@ -57,7 +57,7 @@ class SMBClient(protocol.Protocol):
                 self.job_id, self.factory.get_ip()))
             self.factory.add_data("SMB OK - valid protocol response\r\n")
             self.transport.loseConnection()
-        elif len(self.recv) > 4:
+        elif len(self.recv) >= 8:
             logger.warning("Job %s: Invalid SMB response from %s" % (
                 self.job_id, self.factory.get_ip()))
             self.factory.add_data("SMB FAIL - no valid SMB magic bytes in response\r\n")
