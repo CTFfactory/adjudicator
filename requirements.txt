@@ -1,4 +1,3 @@
 twisted
 pyopenssl
 service_identity
-http_parser

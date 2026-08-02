@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
-# requires:  https://pypi.python.org/pypi/http-parser
 from twisted.internet import reactor, protocol, ssl
-from http_parser.pyparser import HttpParser
 from WebClient import WebServiceCheckFactory, JobFactory
 from GenSocket import GenCheckFactory
 from DNSclient import DNSclient

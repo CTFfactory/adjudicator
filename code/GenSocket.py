@@ -1,8 +1,6 @@
-#!/usr/bin/env python2
-# requires:  https://pypi.python.org/pypi/http-parser
+#!/usr/bin/env python3
 from twisted.internet import reactor, protocol, ssl
 from twisted.internet.defer import Deferred
-from http_parser.pyparser import HttpParser
 from Parameters import Parameters
 from Jobs import Jobs
 import time

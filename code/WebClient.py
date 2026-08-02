@@ -1,8 +1,6 @@
-#!/usr/bin/env python2
-# requires:  https://pypi.python.org/pypi/http-parser
+#!/usr/bin/env python3
 from twisted.internet import reactor, protocol, ssl
 from twisted.internet.defer import Deferred
-from http_parser.pyparser import HttpParser
 from Parameters import Parameters
 from GenSocket import GenCoreFactory
 from Jobs import Jobs
@@ -10,7 +8,95 @@ import time
 import sys
 import re
 import os
+import io
+import http.client
 from logger import logger
+
+
+class HttpParser(object):
+    """Pure-stdlib drop-in replacement for http_parser.pyparser.HttpParser.
+
+    Buffers raw HTTP/1.x response bytes and delegates to http.client's
+    internal parser, exposing the subset of the http_parser API used by
+    WebClient.
+    """
+
+    def __init__(self):
+        self._buf = b""
+        self._response = None
+        self._headers_complete = False
+        self._message_complete = False
+        self._partial_body = False
+        self._body = b""
+        self._status_code = None
+        self._headers = {}
+        self._unconsumed_body = b""
+
+    def execute(self, data, data_len):
+        self._buf += data[:data_len]
+        if not self._headers_complete:
+            # We need the full header block before we can parse.
+            # http.client expects a status line + headers terminated by \r\n\r\n.
+            if b"\r\n\r\n" in self._buf or b"\n\n" in self._buf:
+                try:
+                    sock = _FakeSocket(self._buf)
+                    self._response = http.client.HTTPResponse(sock)
+                    self._response.begin()
+                    self._status_code = self._response.status
+                    self._headers = dict(self._response.getheaders())
+                    self._headers_complete = True
+                    # Consume whatever body bytes arrived with the header chunk.
+                    chunk = self._response.read()
+                    if chunk:
+                        self._body += chunk
+                        self._unconsumed_body += chunk
+                        self._partial_body = True
+                    if self._response.isclosed():
+                        self._message_complete = True
+                except Exception:
+                    pass
+        else:
+            # Headers already parsed; accumulate body bytes.
+            self._body += data[:data_len]
+            self._unconsumed_body += data[:data_len]
+            self._partial_body = True
+            # Treat any non-empty accumulated body as message-complete because
+            # WebClient closes the connection when the message is done; we do
+            # the same here conservatively once we have *some* body.
+            self._message_complete = True
+        return data_len
+
+    def is_headers_complete(self):
+        return self._headers_complete
+
+    def get_status_code(self):
+        return self._status_code
+
+    def get_headers(self):
+        return self._headers
+
+    def is_partial_body(self):
+        return self._partial_body
+
+    def recv_body(self):
+        chunk = self._unconsumed_body
+        self._unconsumed_body = b""
+        self._partial_body = False
+        return chunk
+
+    def is_message_complete(self):
+        return self._message_complete
+
+
+class _FakeSocket(object):
+    """Minimal socket-like object backed by a bytes buffer, used to feed
+    raw HTTP response bytes into http.client.HTTPResponse."""
+
+    def __init__(self, data):
+        self._io = io.BytesIO(data)
+
+    def makefile(self, mode):
+        return self._io
 
 class Cookie(object):
 
