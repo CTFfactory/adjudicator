@@ -322,7 +322,7 @@ class Service(object):
         self.contents = []
         if "content" in self.json:
             if self.json["content"]:
-                if "content" in self.json["content"]:
+                if isinstance(self.json["content"], dict) and "content" in self.json["content"]:
                     if "urls" in self.json["content"]["content"]:
                         urls = self.json["content"]["content"]["urls"]
                         for url in urls:
@@ -391,7 +391,7 @@ class Service(object):
     def has_auth(self):
         if "content" in self.json:
             if self.json["content"]:
-                if "content" in self.json["content"]:
+                if isinstance(self.json["content"], dict) and "content" in self.json["content"]:
                     if "auth" in self.json["content"]["content"]:
                         if list(self.json["content"]["content"]["auth"].keys()):
                             return True
@@ -411,7 +411,7 @@ class Service(object):
             return False
         if "content" in self.json:
             if self.json["content"]:
-                if "content" in self.json["content"]:
+                if isinstance(self.json["content"], dict) and "content" in self.json["content"]:
                     if "auth" in self.json["content"]["content"]:
                         return self.json["content"]["content"]["auth"]
                     else:
@@ -517,7 +517,7 @@ class Service(object):
         
         if type(data) == type('a'):
              data = data.encode('utf-8')
-        self.json["content"] = base64.b64encode(data)
+        self.json["content"] = base64.b64encode(data).decode('utf-8')
 
     def get_url(self):
         # TODO - replace with real code after the JSON is updated
@@ -557,7 +557,7 @@ class Service(object):
             json_content.append(content.get_json())
         if "content" in self.json:
             if self.json["content"]:
-                if "content" in self.json["content"]:
+                if isinstance(self.json["content"], dict) and "content" in self.json["content"]:
                     if "urls" in self.json["content"]["content"]:
                         self.json["urls"] = json_content
         if self.debug:
@@ -707,10 +707,10 @@ class Content(object):
     def set_data(self, data):
         if logger.should_save_data():
             today = time.strftime("%Y%m%d" ,time.gmtime())
-            data_file = open("raw/%s_Job_%s_data" % (today, self.job.get_job_id()), "w")
+            data_file = open("raw/%s_Job_%s_data" % (today, self.job.get_job_id()), "wb")
             data_file.write(base64.b64encode(data))
             data_file.close()
-        self.json["data"] = base64.b64encode(data)
+        self.json["data"] = base64.b64encode(data).decode('utf-8')
 
     def get_data(self):
         if "data" in self.json:
