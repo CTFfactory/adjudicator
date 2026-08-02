@@ -75,5 +75,9 @@ class SMTPFactory(object):
         self.service.pass_conn()
 
     def service_fail(self, failure):
-        logger.warning("Job %s: SMTP check failed for %s:%s: %s" % (self.job_id, self.ip, self.port, failure.getErrorMessage()))
-        self.service.fail_login()
+        err_msg = failure.getErrorMessage().lower()
+        logger.warning("Job %s: SMTP check failed for %s:%s: %s" % (self.job_id, self.ip, self.port, err_msg))
+        if "authenticationerror" in err_msg or "auth" in err_msg or "login failed" in err_msg or "credentials" in err_msg:
+            self.service.pass_degraded()
+        else:
+            self.service.fail_login()

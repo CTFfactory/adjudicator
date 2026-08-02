@@ -74,6 +74,12 @@ class IMAPCheckProtocol(object):
         self.d.callback(self)
 
     def fail(self, failure):
-        logger.warning("Job %s: IMAP check failed for %s:%s: %s" % (self.job.get_job_id(), self.ip, self.port, failure.getErrorMessage()))
+        err_msg = failure.getErrorMessage().lower()
+        logger.warning("Job %s: IMAP check failed for %s:%s: %s" % (self.job.get_job_id(), self.ip, self.port, err_msg))
         self.data = failure.getErrorMessage()
-        self.d.errback(failure)
+        if "login failed" in err_msg or "auth" in err_msg or "credential" in err_msg or "login" in err_msg or "no " in err_msg or "bad " in err_msg:
+            self.job_status = "yellow"
+            self.d.callback(self)
+        else:
+            self.job_status = "fail"
+            self.d.errback(failure)

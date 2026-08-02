@@ -122,8 +122,12 @@ class RedisCheckFactory(GenCoreFactory):
         if self.data:
             self.service.set_data(self.data)
         if self.fail and self.reason:
-            self.service.fail_login()
-            self.deferreds[connector].errback(reason)
+            if "auth" in self.reason.lower() or "authentication" in self.reason.lower():
+                self.service.pass_degraded()
+                self.deferreds[connector].callback(self.job.get_job_id())
+            else:
+                self.service.fail_login()
+                self.deferreds[connector].errback(reason)
         elif self.fail and not self.reason:
             self.service.fail_login()
             self.deferreds[connector].errback(reason)

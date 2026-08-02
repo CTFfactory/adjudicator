@@ -73,6 +73,11 @@ class SSHProtocol(BaseProtocol):
         self.d.callback(self)
 
     def ssh_fail(self, failure):
-        logger.warning("Job %s: SSH check failed: %s" % (self.job.get_job_id(), failure.getErrorMessage()))
-        self.job_status = "fail"
-        self.d.errback(failure)
+        err_msg = failure.getErrorMessage().lower()
+        logger.warning("Job %s: SSH check failed: %s" % (self.job.get_job_id(), err_msg))
+        if "authentication failed" in err_msg or "bad authentication" in err_msg or "permission denied" in err_msg or "auth" in err_msg:
+            self.job_status = "yellow"
+            self.d.callback(self)
+        else:
+            self.job_status = "fail"
+            self.d.errback(failure)

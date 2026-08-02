@@ -99,6 +99,26 @@ class SMBSubprocessProtocol(BaseProtocol):
             args += ["-W", domain]
         reactor.spawnProcess(self, self.prog, args)
 
+    def processEnded(self, reason):
+        exit_code = 0
+        if hasattr(reason.value, 'exitCode') and reason.value.exitCode is not None:
+            exit_code = reason.value.exitCode
+
+        self.exit_code = exit_code
+        err_msg = self.data.lower()
+        if "logon_failure" in err_msg or "access_denied" in err_msg or "access denied" in err_msg or "login failed" in err_msg:
+            self.job_status = "yellow"
+            self.d.callback(self)
+        elif exit_code == 0:
+            self.job_status = "pass"
+            self.d.callback(self)
+        elif exit_code == 1:
+            self.job_status = "yellow"
+            self.d.callback(self)
+        else:
+            self.job_status = "fail"
+            self.d.errback(reason)
+
 
 class SMBCheckFactory(GenCoreFactory):
 
