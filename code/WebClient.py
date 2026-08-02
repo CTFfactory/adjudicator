@@ -409,11 +409,13 @@ class WebServiceCheckFactory(WebCoreFactory):
 
     def auth_pass(self, result):
         self.authenticating = False
+        self.authenticated = True
         logger.info("Job %s: Successfully authenticated against %s" % (self.get_job_id(), self.addr))
         self.check_contents()
 
     def auth_fail(self, failure):
         self.authenticating = False
+        self.authenticated = False
         logger.warning("Job %s: Authentication failed against %s: %s" % (self.get_job_id(), self.addr, failure))
         self.check_contents()
 
@@ -445,7 +447,10 @@ class WebServiceCheckFactory(WebCoreFactory):
 
     def conn_pass(self, result):
         logger.info("Job %s: Successfully connected to %s" % (self.get_job_id(), self.addr))
-        self.service.pass_conn()
+        if self.service.has_auth() and self.authenticated:
+            self.service.pass_conn()
+        else:
+            self.service.pass_degraded()
 
     def conn_fail(self, failure):
         logger.warning("Job %s: Failed connect for service %s/%s" % \
@@ -454,7 +459,10 @@ class WebServiceCheckFactory(WebCoreFactory):
 
     def content_pass(self, result, content):
         content.success()
-        self.service.pass_conn()
+        if self.service.has_auth() and self.authenticated:
+            self.service.pass_conn()
+        else:
+            self.service.pass_degraded()
         logger.info("Job %s: Finished content check for %s/%s | %s" % \
                          (self.get_job_id(), self.service.get_port(), self.service.get_proto(),
                           content.get_url()))
@@ -518,8 +526,12 @@ class WebServiceCheckFactory(WebCoreFactory):
             self.service.fail_conn("other", self.data)
             self.deferreds[connector].errback(reason)
         else:
-            self.service.pass_conn()
+            if self.service.has_auth() and self.authenticated:
+                self.service.pass_conn()
+            else:
+                self.service.pass_degraded()
             self.deferreds[connector].callback(self.job.get_job_id())
+
 
 if __name__ == "__main__":
     #from twisted.python import log

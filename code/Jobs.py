@@ -7,7 +7,7 @@ import pprint
 import os
 from logger import logger
 
-statuses = ["pass", "reset", "timeout", "refused", "invalid"]
+statuses = ["pass", "reset", "timeout", "refused", "invalid", "yellow"]
 
 class Jobs(object):
 
@@ -478,6 +478,9 @@ class Service(object):
 
     def pass_conn(self):
         self.json["status"] = "pass"
+
+    def pass_degraded(self):
+        self.json["status"] = "yellow"
 
     def fail_login(self):
         self.json["status"] = "fail"
