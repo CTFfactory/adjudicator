@@ -104,7 +104,10 @@ class RDPSubprocessProtocol(BaseProtocol):
 
         self.exit_code = exit_code
         err_msg = self.data.lower()
-        if "logon failure" in err_msg or "authentication failure" in err_msg or "errconnect_logon_failure" in err_msg:
+        if "failed to open display" in err_msg:
+            self.job_status = "pass"
+            self.d.callback(self)
+        elif "logon failure" in err_msg or "authentication failure" in err_msg or "errconnect_logon_failure" in err_msg:
             self.job_status = "yellow"
             self.d.callback(self)
         elif exit_code == 0:
