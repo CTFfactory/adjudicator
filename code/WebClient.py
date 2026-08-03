@@ -533,10 +533,7 @@ class WebServiceCheckFactory(WebCoreFactory):
 
     def conn_pass(self, result):
         logger.info("Job %s: Successfully connected to %s" % (self.get_job_id(), self.addr))
-        if self.service.has_auth() and self.authenticated:
-            self.service.pass_conn()
-        else:
-            self.service.pass_degraded()
+        self.service.pass_conn()
 
     def conn_fail(self, failure):
         logger.warning("Job %s: Failed connect for service %s/%s" % \
@@ -545,10 +542,7 @@ class WebServiceCheckFactory(WebCoreFactory):
 
     def content_pass(self, result, content):
         content.success()
-        if self.service.has_auth() and self.authenticated:
-            self.service.pass_conn()
-        else:
-            self.service.pass_degraded()
+        self.service.pass_conn()
         logger.info("Job %s: Finished content check for %s/%s | %s" % \
                          (self.get_job_id(), self.service.get_port(), self.service.get_proto(),
                           content.get_url()))
@@ -612,10 +606,7 @@ class WebServiceCheckFactory(WebCoreFactory):
             self.service.fail_conn("other", self.data)
             self.deferreds[connector].errback(reason)
         else:
-            if self.service.has_auth() and self.authenticated:
-                self.service.pass_conn()
-            else:
-                self.service.pass_degraded()
+            self.service.pass_conn()
             self.deferreds[connector].callback(self.job.get_job_id())
 
 
