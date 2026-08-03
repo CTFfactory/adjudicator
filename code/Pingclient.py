@@ -33,12 +33,14 @@ class PingProtocol(protocol.ProcessProtocol):
             self.data += data
 
     def outConnectionLost(self):
-        self.recv = int(self.received_re.search(self.data).group(1))
-        self.trans = int(self.transmitted_re.search(self.data).group(1))
+        recv_match = self.received_re.search(self.data)
+        trans_match = self.transmitted_re.search(self.data)
+        self.recv = int(recv_match.group(1)) if recv_match else 0
+        self.trans = int(trans_match.group(1)) if trans_match else int(self.count)
         self.lost = self.trans - self.recv
         self.job.set_ping_sent(self.trans)
         self.job.set_ping_respond(self.recv)
-        self.ratio = self.recv / self.trans
+        self.ratio = float(self.recv) / self.trans if self.trans > 0 else 0.0
         if 0 <= self.ratio <= 100:
             self.d.callback(self)
         else:
