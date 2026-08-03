@@ -155,8 +155,8 @@ class SMBCheckFactory(GenCoreFactory):
             deferred.addErrback(self.service_fail)
 
     def service_pass(self, reason):
-        self.service.pass_conn()
-        logger.info("Job %s: SMB check passed for %s" % (self.job_id, self.ip))
+        self.service.pass_degraded()
+        logger.info("Job %s: SMB check passed (degraded - yellow) for %s" % (self.job_id, self.ip))
 
     def service_fail(self, failure):
         self.service.fail_conn(failure.getErrorMessage())
@@ -193,5 +193,5 @@ class SMBCheckFactory(GenCoreFactory):
             self.service.fail_login()
             self.deferreds[connector].errback(reason)
         else:
-            self.service.pass_conn()
+            self.service.pass_degraded()
             self.deferreds[connector].callback(self.job.get_job_id())

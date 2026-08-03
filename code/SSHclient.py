@@ -58,10 +58,12 @@ class SSHProtocol(BaseProtocol):
         private_key = auth.get("private_key", "") if auth else ""
 
         if username and (password or private_key) and HAS_PARAMIKO:
+            self.missing_auth = False
             d = deferToThread(run_ssh_auth_check, self.ipaddr, self.service.get_port(), username, password, private_key, 10)
             d.addCallback(self.ssh_success)
             d.addErrback(self.ssh_fail)
         else:
+            self.missing_auth = True
             args = [self.prog, "-H", self.ipaddr]
             if self.service:
                 args += ["-p", str(self.service.get_port())]
@@ -81,3 +83,22 @@ class SSHProtocol(BaseProtocol):
         else:
             self.job_status = "fail"
             self.d.errback(failure)
+
+    def processEnded(self, reason):
+        exit_code = 0
+        if hasattr(reason.value, 'exitCode') and reason.value.exitCode is not None:
+            exit_code = reason.value.exitCode
+
+        self.exit_code = exit_code
+        if exit_code == 0:
+            if getattr(self, "missing_auth", False):
+                self.job_status = "yellow"
+            else:
+                self.job_status = "pass"
+            self.d.callback(self)
+        elif exit_code == 1:
+            self.job_status = "yellow"
+            self.d.callback(self)
+        else:
+            self.job_status = "fail"
+            self.d.errback(reason)

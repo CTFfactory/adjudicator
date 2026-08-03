@@ -20,7 +20,10 @@ class MySQLProtocol(BaseProtocol):
             args += ["-P", str(self.service.get_port())]
             auth = self.service.get_auth()
             if auth and "username" in auth and "password" in auth:
+                self.missing_auth = False
                 args += ["-u", auth["username"], "-p", auth["password"]]
+            else:
+                self.missing_auth = True
         reactor.spawnProcess(self, self.prog, args)
 
     def processEnded(self, reason):
@@ -38,7 +41,10 @@ class MySQLProtocol(BaseProtocol):
                 self.job_status = "pass"
             self.d.callback(self)
         elif exit_code == 0:
-            self.job_status = "pass"
+            if getattr(self, "missing_auth", False):
+                self.job_status = "yellow"
+            else:
+                self.job_status = "pass"
             self.d.callback(self)
         elif exit_code == 1:
             self.job_status = "yellow"
