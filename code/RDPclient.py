@@ -95,7 +95,8 @@ class RDPSubprocessProtocol(BaseProtocol):
         username = auth.get("username", "")
         password = auth.get("password", "")
         args = [self.prog, "/v:" + self.ipaddr + ":" + str(self.service.get_port()), "/u:" + username, "/p:" + password, "+auth-only", "/cert-ignore"]
-        reactor.spawnProcess(self, self.prog, args)
+        import os
+        reactor.spawnProcess(self, self.prog, args, env=os.environ)
 
     def processEnded(self, reason):
         exit_code = 0
