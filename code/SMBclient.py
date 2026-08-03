@@ -163,8 +163,12 @@ class SMBCheckFactory(GenCoreFactory):
         logger.warning("Job %s: SMB check failed for %s" % (self.job_id, self.ip))
 
     def subprocess_pass(self, proto):
-        self.service.pass_conn()
-        logger.info("Job %s: SMB authentication check passed for %s" % (self.job_id, self.ip))
+        if getattr(proto, 'job_status', None) == "yellow":
+            self.service.pass_degraded()
+            logger.info("Job %s: SMB authentication check degraded (yellow) for %s" % (self.job_id, self.ip))
+        else:
+            self.service.pass_conn()
+            logger.info("Job %s: SMB authentication check passed for %s" % (self.job_id, self.ip))
 
     def subprocess_fail(self, failure):
         self.service.fail_login()
