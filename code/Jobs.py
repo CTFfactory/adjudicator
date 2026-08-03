@@ -323,26 +323,52 @@ class Service(object):
         if "content" in self.json:
             if self.json["content"]:
                 if isinstance(self.json["content"], dict) and "content" in self.json["content"]:
-                    if "urls" in self.json["content"]["content"]:
-                        urls = self.json["content"]["content"]["urls"]
+                    content_obj = self.json["content"]["content"]
+                    
+                    urls = None
+                    files = None
+                    pages = None
+                    auth = None
+
+                    if isinstance(content_obj, dict):
+                        if "urls" in content_obj:
+                            urls = content_obj["urls"]
+                        if "files" in content_obj:
+                            files = content_obj["files"]
+                        if "pages" in content_obj:
+                            pages = content_obj["pages"]
+                        if "auth" in content_obj:
+                            auth = content_obj["auth"]
+
+                        # Check nested content if present (for nested game-definitions imports)
+                        nested = content_obj.get("content")
+                        if isinstance(nested, dict):
+                            if "urls" in nested and not urls:
+                                urls = nested["urls"]
+                            if "files" in nested and not files:
+                                files = nested["files"]
+                            if "pages" in nested and not pages:
+                                pages = nested["pages"]
+                            if "auth" in nested and not auth:
+                                auth = nested["auth"]
+
+                    if urls:
                         for url in urls:
                             self.contents.append(Content(url, self.job))
-                    elif "files" in self.json["content"]["content"]:
-                        files = self.json["content"]["content"]["files"]
+                    elif files:
                         for file in files:
                             self.contents.append(Content(file, self.job))
-                    elif "pages" in self.json["content"]["content"]:
-                        pages = self.json["content"]["content"]["pages"]
+                    elif pages:
                         for page in pages:
                             self.contents.append(Content(page, self.job))
-                    elif "auth" in self.json["content"]["content"] and len(self.json["content"]["content"]) == 1:
+                    elif auth:
                         # Only authentication info, no actual content verification files/pages needed
                         pass
-                    elif not self.json["content"]["content"]:
+                    elif not urls and not files and not pages and not auth:
                         # Empty content verification needed
                         pass
                     else:
-                        raise Exception ("Job %s: Unknown content type %s for job" % (self.job.get_job_id(), "|".join(list(self.json["content"]["content"].keys()))))
+                        raise Exception ("Job %s: Unknown content structure for job" % self.job.get_job_id())
                 else:
                     raise Exception ("Job %s: Illegal content type in json" % self.job.get_job_id())
             else:
@@ -392,13 +418,14 @@ class Service(object):
         if "content" in self.json:
             if self.json["content"]:
                 if isinstance(self.json["content"], dict) and "content" in self.json["content"]:
-                    if "auth" in self.json["content"]["content"]:
-                        if list(self.json["content"]["content"]["auth"].keys()):
-                            return True
-                        else:
-                            return False
-                    else:
-                        return False
+                    content_obj = self.json["content"]["content"]
+                    if isinstance(content_obj, dict):
+                        if "auth" in content_obj:
+                            return bool(content_obj["auth"])
+                        nested = content_obj.get("content")
+                        if isinstance(nested, dict) and "auth" in nested:
+                            return bool(nested["auth"])
+                    return False
                 else:
                     return False
             else:
@@ -412,10 +439,14 @@ class Service(object):
         if "content" in self.json:
             if self.json["content"]:
                 if isinstance(self.json["content"], dict) and "content" in self.json["content"]:
-                    if "auth" in self.json["content"]["content"]:
-                        return self.json["content"]["content"]["auth"]
-                    else:
-                        return False
+                    content_obj = self.json["content"]["content"]
+                    if isinstance(content_obj, dict):
+                        if "auth" in content_obj:
+                            return content_obj["auth"]
+                        nested = content_obj.get("content")
+                        if isinstance(nested, dict) and "auth" in nested:
+                            return nested["auth"]
+                    return False
                 else:
                     return False
             else:
@@ -553,13 +584,30 @@ class Service(object):
 
     def get_json(self):
         json_content = []
-        for content in self.contents:
-            json_content.append(content.get_json())
+        if self.contents:
+            for content in self.contents:
+                json_content.append(content.get_json())
         if "content" in self.json:
             if self.json["content"]:
                 if isinstance(self.json["content"], dict) and "content" in self.json["content"]:
-                    if "urls" in self.json["content"]["content"]:
-                        self.json["urls"] = json_content
+                    content_obj = self.json["content"]["content"]
+                    if isinstance(content_obj, dict):
+                        if "urls" in content_obj:
+                            content_obj["urls"] = json_content
+                        elif "files" in content_obj:
+                            content_obj["files"] = json_content
+                        elif "pages" in content_obj:
+                            content_obj["pages"] = json_content
+                        
+                        # Check nested content if present
+                        nested = content_obj.get("content")
+                        if isinstance(nested, dict):
+                            if "urls" in nested:
+                                nested["urls"] = json_content
+                            elif "files" in nested:
+                                nested["files"] = json_content
+                            elif "pages" in nested:
+                                nested["pages"] = json_content
         if self.debug:
             pp = pprint.PrettyPrinter(depth=4)
             pp.pprint(self.json)
