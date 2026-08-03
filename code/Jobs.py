@@ -651,22 +651,29 @@ class Content(object):
     def verify_page(self, page):
         if self.debug:
             logger.debug("Checking contents...\n\tChecking size...")
-        if len(page)==self.json["size"]:
-            if self.debug:
-                logger.debug("\tSize is good, checking keywords...")
-            for keyword in self.json["keywords"]:
+        
+        expected_size = self.json.get("size")
+        if expected_size is not None and expected_size != -1:
+            if len(page) != expected_size:
                 if self.debug:
-                    logger.debug("\t\tChecking %s..." % keyword)
-                if keyword in page:
-                    if self.debug:
-                        logger.debug("Good!")
-                    continue
-                else:
-                    if self.debug:
-                        logger.debug("Bad!")
-                    self.invalid()
-        else:
-            self.invalid()
+                    logger.debug("Bad size: expected %d, got %d" % (expected_size, len(page)))
+                self.invalid()
+                return
+
+        if self.debug:
+            logger.debug("\tSize is good, checking keywords...")
+        for keyword in self.json["keywords"]:
+            if self.debug:
+                logger.debug("\t\tChecking %s..." % keyword)
+            if keyword in page:
+                if self.debug:
+                    logger.debug("Good!")
+                continue
+            else:
+                if self.debug:
+                    logger.debug("Bad!")
+                self.invalid()
+                return
         if self.debug:
             logger.debug("Done content check!")
         self.success()
