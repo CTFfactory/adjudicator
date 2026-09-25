@@ -46,7 +46,7 @@ class RDPClient(protocol.Protocol):
         self.factory.add_fail("timeout")
 
     def connectionMade(self):
-        logger.info("Job %s: RDP connection made to %s:%s" % (
+        logger.debug("Job %s: RDP connection made to %s:%s" % (
             self.job_id, self.factory.get_ip(), self.factory.get_port()))
         reactor.callLater(self.factory.get_timeout(), self.TimedOut)
         cr_pdu = build_x224_connection_request()
@@ -72,7 +72,7 @@ class RDPClient(protocol.Protocol):
         if len(self.recv) > 5:
             x224_code = struct.unpack('B', self.recv[5:6])[0]
             if (x224_code & 0xf0) == 0xd0:
-                logger.info("Job %s: Valid RDP X.224 CC response from %s" % (
+                logger.debug("Job %s: Valid RDP X.224 CC response from %s" % (
                     self.job_id, self.factory.get_ip()))
                 self.factory.add_data("RDP OK - valid X.224 Connection Confirm received\r\n")
                 self.transport.loseConnection()
@@ -158,7 +158,7 @@ class RDPCheckFactory(GenCoreFactory):
 
     def service_pass(self, reason):
         self.service.pass_degraded()
-        logger.info("Job %s: RDP check passed (degraded - yellow) for %s" % (self.job_id, self.ip))
+        logger.debug("Job %s: RDP check passed (degraded - yellow) for %s" % (self.job_id, self.ip))
 
     def service_fail(self, failure):
         self.service.fail_login()
@@ -167,10 +167,10 @@ class RDPCheckFactory(GenCoreFactory):
     def subprocess_pass(self, proto):
         if getattr(proto, 'job_status', None) == "yellow":
             self.service.pass_degraded()
-            logger.info("Job %s: RDP authentication check degraded (yellow) for %s" % (self.job_id, self.ip))
+            logger.debug("Job %s: RDP authentication check degraded (yellow) for %s" % (self.job_id, self.ip))
         else:
             self.service.pass_conn()
-            logger.info("Job %s: RDP authentication check passed for %s" % (self.job_id, self.ip))
+            logger.debug("Job %s: RDP authentication check passed for %s" % (self.job_id, self.ip))
 
     def subprocess_fail(self, failure):
         self.service.fail_login()

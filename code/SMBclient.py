@@ -63,7 +63,7 @@ class SMBClient(protocol.Protocol):
         self.factory.add_fail("timeout")
 
     def connectionMade(self):
-        logger.info("Job %s: SMB connection made to %s:%s" % (
+        logger.debug("Job %s: SMB connection made to %s:%s" % (
             self.job_id, self.factory.get_ip(), self.factory.get_port()))
         reactor.callLater(self.factory.get_timeout(), self.TimedOut)
         negotiate_pkt = build_smb2_negotiate()
@@ -72,7 +72,7 @@ class SMBClient(protocol.Protocol):
     def dataReceived(self, data):
         self.recv += data
         if b'\xfeSMB' in self.recv or b'\xffSMB' in self.recv:
-            logger.info("Job %s: Valid SMB response received from %s" % (
+            logger.debug("Job %s: Valid SMB response received from %s" % (
                 self.job_id, self.factory.get_ip()))
             self.factory.add_data("SMB OK - valid protocol response\r\n")
             self.transport.loseConnection()
@@ -156,7 +156,7 @@ class SMBCheckFactory(GenCoreFactory):
 
     def service_pass(self, reason):
         self.service.pass_degraded()
-        logger.info("Job %s: SMB check passed (degraded - yellow) for %s" % (self.job_id, self.ip))
+        logger.debug("Job %s: SMB check passed (degraded - yellow) for %s" % (self.job_id, self.ip))
 
     def service_fail(self, failure):
         self.service.fail_conn(failure.getErrorMessage())
@@ -165,10 +165,10 @@ class SMBCheckFactory(GenCoreFactory):
     def subprocess_pass(self, proto):
         if getattr(proto, 'job_status', None) == "yellow":
             self.service.pass_degraded()
-            logger.info("Job %s: SMB authentication check degraded (yellow) for %s" % (self.job_id, self.ip))
+            logger.debug("Job %s: SMB authentication check degraded (yellow) for %s" % (self.job_id, self.ip))
         else:
             self.service.pass_conn()
-            logger.info("Job %s: SMB authentication check passed for %s" % (self.job_id, self.ip))
+            logger.debug("Job %s: SMB authentication check passed for %s" % (self.job_id, self.ip))
 
     def subprocess_fail(self, failure):
         self.service.fail_login()

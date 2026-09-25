@@ -71,7 +71,7 @@ class SMTPFactory(object):
         d.addErrback(self.service_fail)
 
     def service_pass(self, result):
-        logger.info("Job %s: SMTP check passed for %s:%s: %s" % (self.job_id, self.ip, self.port, result))
+        logger.debug("Job %s: SMTP check passed for %s:%s: %s" % (self.job_id, self.ip, self.port, result))
         self.service.pass_conn()
 
     def service_fail(self, failure):

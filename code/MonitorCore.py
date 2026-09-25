@@ -42,7 +42,7 @@ class MonitorCore(object):
             if self.params.debug:
                 logger.debug("Connecting to SB Core: %s:%s, timeout is %s" % (sb_ip, sb_port, timeout))
             else:
-                logger.info("Connecting to SB Core: %s:%s, timeout is %s" % (sb_ip, sb_port, timeout))
+                logger.debug("Connecting to SB Core: %s:%s, timeout is %s" % (sb_ip, sb_port, timeout))
             ssl_obj = ssl.CertificateOptions()
             reactor.connectSSL(sb_ip, sb_port, factory, ssl_obj,\
                                             timeout)
@@ -50,7 +50,7 @@ class MonitorCore(object):
             if self.params.debug:
                 logger.debug("Connecting to SB Core: %s:%s, timeout is %s" % (sb_ip, sb_port, timeout))
             else:
-                logger.info("Connecting to SB Core: %s:%s, timeout is %s" % (sb_ip, sb_port, timeout))
+                logger.debug("Connecting to SB Core: %s:%s, timeout is %s" % (sb_ip, sb_port, timeout))
             reactor.connectTCP(sb_ip, sb_port, factory, timeout)
         else:
             raise Exception("Unknown scheme:  %s" % self.params.get_scheme())
@@ -107,16 +107,16 @@ class MonitorCore(object):
                 fileobj = open(filename, "w")
                 fileobj.write(result)
                 fileobj.close()
-                logger.info("Job %s: submitted, SBE response in file %s" % (job_id, filename))
+                logger.debug("Job %s: submitted, SBE response in file %s" % (job_id, filename))
             else:
-                logger.info("Job %s: submitted, SBE response > 300 chars (not saved)" % job_id)
+                logger.debug("Job %s: submitted, SBE response > 300 chars (not saved)" % job_id)
         else:
-            logger.info("Job %s: submitted, SBE response: %s" % (job_id, result))
+            logger.debug("Job %s: submitted, SBE response: %s" % (job_id, result))
         logger.debug("Job %s: submitted: %s" % (job_id, job_json))
 
     def job_submit_pass(self, result, job):
         job_id = job.get_job_id()
-        logger.info("Job %s: successfully submitted %s " % (job_id, result))
+        logger.debug("Job %s: successfully submitted %s " % (job_id, result))
         self.proc_result(job, result)
         self.jobs_done.append(job_id)
         self.jobs.submitted_job(job_id)
@@ -127,7 +127,7 @@ class MonitorCore(object):
         if job.get_job_fail():
             logger.error("Job %s: giving up." % job_id)
         else:
-            logger.info("Job %s: retrying in %s." % (job_id, self.resubmit_interval))
+            logger.debug("Job %s: retrying in %s." % (job_id, self.resubmit_interval))
             reactor.callLater(self.resubmit_interval, self.post_job, job)
 
     def dns_fail(self, failure, job, dnsobj):
@@ -142,7 +142,7 @@ class MonitorCore(object):
 
     def dns_pass(self, result, job, dnsobj):
         jobid = job.get_job_id()
-        logger.info("Job %s:  DNS passed: %s" % (jobid, result))
+        logger.debug("Job %s:  DNS passed: %s" % (jobid, result))
         reactor.callLater(0.1, self.pinghost, job)
         dnsobj.close()
         del dnsobj
@@ -156,7 +156,7 @@ class MonitorCore(object):
 
     def ping_pass(self, result, job, pingobj):
         jobid = job.get_job_id()
-        logger.info("Job %s:  Ping passed. %s" % (jobid, result))
+        logger.debug("Job %s:  Ping passed. %s" % (jobid, result))
         reactor.callLater(1, self.check_services, job)
         del pingobj
 
@@ -180,7 +180,7 @@ class MonitorCore(object):
         port = service.get_port()
         status = getattr(client_obj, "job_status", "pass")
         service.set_status(status)
-        logger.info("Job %s: %s (%s/%s) passed/warning with status %s." % (jobid, service.get_application().upper(), port, proto, status))
+        logger.debug("Job %s: %s (%s/%s) passed/warning with status %s." % (jobid, service.get_application().upper(), port, proto, status))
         logger.debug("Nagios result: %s" % client_obj.data)
         del client_obj
 
@@ -261,7 +261,7 @@ class MonitorCore(object):
         proto = service.get_proto()
         port = service.get_port()
         jobid = job.get_job_id()
-        logger.info("Job %s:  Service %s/%s passed. %s" % (jobid, port, proto, result))
+        logger.debug("Job %s:  Service %s/%s passed. %s" % (jobid, port, proto, result))
 
     def gen_service_connect_fail(self, failure, job, service):
         service.fail_conn(failure.getErrorMessage())

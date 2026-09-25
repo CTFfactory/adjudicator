@@ -208,9 +208,9 @@ class WebClient(protocol.Protocol):
 
     def connectionMade(self):
         if self.job_id:
-            logger.info("Job %s: Made connection to %s:%s" % (self.job_id, self.factory.get_ip(), self.factory.get_port()))
+            logger.debug("Job %s: Made connection to %s:%s" % (self.job_id, self.factory.get_ip(), self.factory.get_port()))
         else:
-            logger.info("Made connection to %s:%s" % (self.factory.get_ip(), self.factory.get_port()))
+            logger.debug("Made connection to %s:%s" % (self.factory.get_ip(), self.factory.get_port()))
         logger.debug("Sending this content:\n%s" % self.request)
         self.transport.write((self.request.decode('utf-8')+"\r\n").encode('utf-8'))
 
@@ -229,7 +229,7 @@ class WebClient(protocol.Protocol):
 
         if self.parser.is_headers_complete():
             status = self.parser.get_status_code()
-            logger.info("Job %s: Returned status %s" % (self.job_id, status))
+            logger.debug("Job %s: Returned status %s" % (self.job_id, status))
             if self.authing:
                 if status != 302:
                     raise Exception("Job %s: Failed authentication" % (self.job_id))
@@ -363,7 +363,7 @@ class JobFactory(WebCoreFactory):
             self.verb = "POST"
             #self.postdata = self.job.get_json_str()
             self.postdata = self.job.get_result_json_str()
-            logger.info("Job %s: Starting Job Post" % self.job.get_job_id())
+            logger.debug("Job %s: Starting Job Post" % self.job.get_job_id())
             logger.debug("Job %s: Sending JSON: %s" % (self.job.get_job_id(), self.postdata))
         else:
             raise Exception("Job %s: Unknown operation %s\n" % (self.job_id, op))
@@ -398,9 +398,9 @@ class JobFactory(WebCoreFactory):
     def clientConnectionLost(self, connector, reason):
         if "put" in self.op:
             job_id = self.job.get_job_id()
-            logger.info("Job %s: Received code %s" % (job_id, self.code))
+            logger.debug("Job %s: Received code %s" % (job_id, self.code))
             if self.code == 202:
-                logger.info("Job %s: submitted successfully" % job_id)
+                logger.debug("Job %s: submitted successfully" % job_id)
                 self.deferreds[connector].callback("Connection closed")
                 return
             else:
@@ -410,7 +410,7 @@ class JobFactory(WebCoreFactory):
         elif "get" in self.op:
             if self.get_debug():
                 logger.debug("Job GET request clientConnectionLost")
-            logger.info("Job GET Received code %s" % self.code)
+            logger.debug("Job GET Received code %s" % self.code)
             if self.debug:
                 logger.debug("Received headers: %s" % self.get_server_headers())
             if self.code == 403:
@@ -427,14 +427,14 @@ class JobFactory(WebCoreFactory):
                             fileobj = open(filename, "w")
                             fileobj.write(self.body)
                             fileobj.close()
-                            logger.info("HTML response from SBE detected, written to %s" % filename)
+                            logger.debug("HTML response from SBE detected, written to %s" % filename)
                         else:
-                            logger.info("HTML response from SBE detected (not saved)")
+                            logger.debug("HTML response from SBE detected (not saved)")
                     else:
                         logger.debug("Adding as job: %s" % self.body)
                         self.jobs.add(self.body)
                 else:
-                    logger.info("No job to add!")
+                    logger.debug("No job to add!")
         else:
             raise Exception("Unknown op: %s\n" % self.op)
 
@@ -496,7 +496,7 @@ class WebServiceCheckFactory(WebCoreFactory):
     def auth_pass(self, result):
         self.authenticating = False
         self.authenticated = True
-        logger.info("Job %s: Successfully authenticated against %s" % (self.get_job_id(), self.addr))
+        logger.debug("Job %s: Successfully authenticated against %s" % (self.get_job_id(), self.addr))
         self.check_contents()
 
     def auth_fail(self, failure):
@@ -532,7 +532,7 @@ class WebServiceCheckFactory(WebCoreFactory):
                 deferred.addErrback(self.conn_fail)
 
     def conn_pass(self, result):
-        logger.info("Job %s: Successfully connected to %s" % (self.get_job_id(), self.addr))
+        logger.debug("Job %s: Successfully connected to %s" % (self.get_job_id(), self.addr))
         self.service.pass_conn()
 
     def conn_fail(self, failure):
@@ -543,7 +543,7 @@ class WebServiceCheckFactory(WebCoreFactory):
     def content_pass(self, result, content):
         content.success()
         self.service.pass_conn()
-        logger.info("Job %s: Finished content check for %s/%s | %s" % \
+        logger.debug("Job %s: Finished content check for %s/%s | %s" % \
                          (self.get_job_id(), self.service.get_port(), self.service.get_proto(),
                           content.get_url()))
 
@@ -591,7 +591,7 @@ class WebServiceCheckFactory(WebCoreFactory):
         self.end = time.time()
         #if self.params.debug:
         if True:
-            logger.info("Job %s: clientConnectionLost: %s" % (self.job.get_job_id(), reason.getErrorMessage()))
+            logger.debug("Job %s: clientConnectionLost: %s" % (self.job.get_job_id(), reason.getErrorMessage()))
             logger.debug("Received headers: %s" % self.get_server_headers())
         conn_time = self.end - self.start
         if self.data:

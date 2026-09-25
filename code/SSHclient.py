@@ -70,7 +70,7 @@ class SSHProtocol(BaseProtocol):
             reactor.spawnProcess(self, self.prog, args)
 
     def ssh_success(self, result):
-        logger.info("Job %s: SSH check passed: %s" % (self.job.get_job_id(), result))
+        logger.debug("Job %s: SSH check passed: %s" % (self.job.get_job_id(), result))
         self.job_status = "pass"
         self.d.callback(self)
 
