@@ -27,7 +27,7 @@ class DNSclient(object):
     def query(self):
         #print "Querying %s for %s" % (self.dnssvr, self.fqdn)
         dnssvr = self.dnssvrs.pop()
-        logger.info("Job %s: starting DNS for FQDN %s using server %s" % (self.job_id, self.fqdn, dnssvr))
+        logger.debug("Job %s: starting DNS for FQDN %s using server %s" % (self.job_id, self.fqdn, dnssvr))
         self.d = self.proto.query((dnssvr, 53), [dns.Query(self.fqdn, dns.A)], timeout=self.timeout)
         self.d.addCallback(self.getResults)
         return self.d
@@ -37,7 +37,7 @@ class DNSclient(object):
             answer_str = '%s' % res.answers[0].payload
             ip_addr = answer_str.split(" ")[1].split("=")[1]
             self.job.set_ip(ip_addr)
-            logger.info("Job %s:  DNS lookup for %s gave %s" % \
+            logger.debug("Job %s:  DNS lookup for %s gave %s" % \
                                 (self.job.get_job_id(), res.answers[0].name, self.job.get_ip()))
         else:
             self.job.set_ping_sent(0)

@@ -73,14 +73,14 @@ class FTP_client(object):
         for content in self.service.get_contents():
             logger.debug("Checking against: |%s|" % content.get_data())
             if found_data.decode('utf-8', errors='replace').strip("\r\n") == content.get_data():
-                logger.info("Job ID %s: content check passed" % self.job.get_job_id())
+                logger.debug("Job ID %s: content check passed" % self.job.get_job_id())
                 content.success()
             else:
                 content.fail(found_data)
                 logger.warning("Job ID %s: content check failed" % self.job.get_job_id())
 
     def connectionMade(self, ftpClient):
-        logger.info("Job ID: %s service %s/%s connected" % \
+        logger.debug("Job ID: %s service %s/%s connected" % \
                          (self.job_id, self.service.get_port(), self.service.get_proto()))
         self.service.pass_conn()
         username = self.service.get_username()
@@ -92,7 +92,7 @@ class FTP_client(object):
         # Get config
         passive = self.service.get_passive()
         # Create the client
-        logger.info("Job ID %s:  Connecting to %s %s/%s" % \
+        logger.debug("Job ID %s:  Connecting to %s %s/%s" % \
                          (self.job_id, self.ip_addr, self.port, self.proto))
         self.creator = ClientCreator(reactor, ctfFTPclient, passive=passive)
         self.ftp_deferred = self.creator.connectTCP(self.ip_addr, self.port)

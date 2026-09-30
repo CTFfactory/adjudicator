@@ -20,7 +20,7 @@ class RedisClient(protocol.Protocol):
         self.factory.add_fail("timeout")
 
     def connectionMade(self):
-        logger.info("Job %s: Redis connection made to %s:%s" % (
+        logger.debug("Job %s: Redis connection made to %s:%s" % (
             self.job_id, self.factory.get_ip(), self.factory.get_port()))
         reactor.callLater(self.factory.get_timeout(), self.TimedOut)
 
@@ -51,7 +51,7 @@ class RedisClient(protocol.Protocol):
                 self.transport.loseConnection()
         elif self.state == 'PINGING':
             if '+PONG' in response:
-                logger.info("Job %s: Redis PONG received from %s" % (
+                logger.debug("Job %s: Redis PONG received from %s" % (
                     self.job_id, self.factory.get_ip()))
                 self.factory.add_data("Redis OK - PONG received\r\n")
                 self.transport.loseConnection()
@@ -106,7 +106,7 @@ class RedisCheckFactory(GenCoreFactory):
 
     def service_pass(self, reason):
         self.service.pass_conn()
-        logger.info("Job %s: Redis check passed for %s" % (self.job_id, self.ip))
+        logger.debug("Job %s: Redis check passed for %s" % (self.job_id, self.ip))
 
     def service_fail(self, failure):
         self.service.fail_login()

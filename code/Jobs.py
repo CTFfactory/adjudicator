@@ -54,13 +54,13 @@ class Jobs(object):
             self.jobs[job_id].fail_dns()
         if job_id in self.done:
             self.done.remove(job_id)
-            logger.info("Job %s: Closing out finished job because %s" % (job_id, reason))
+            logger.debug("Job %s: Closing out finished job because %s" % (job_id, reason))
         elif job_id in self.proc:
             self.proc.remove(job_id)
-            logger.info("Job %s: Prematurely closing out job while in process because %s!" % (job_id, reason))
+            logger.debug("Job %s: Prematurely closing out job while in process because %s!" % (job_id, reason))
         elif job_id in self.todo:
             self.todo.remove(job_id)
-            logger.info("Job %s: Prematurely closing out job before starting it because %s!" % (job_id, reason))
+            logger.debug("Job %s: Prematurely closing out job before starting it because %s!" % (job_id, reason))
         job = self.jobs[job_id]
         self.pending_submitted.append(job_id)
         return job

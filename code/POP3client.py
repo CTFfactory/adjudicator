@@ -70,7 +70,7 @@ class POP3CheckProtocol(object):
             raise Exception("POP3 connect failed: %s" % e)
 
     def success(self, result):
-        logger.info("Job %s: POP3 check passed for %s:%s: %s" % (self.job.get_job_id(), self.ip, self.port, result))
+        logger.debug("Job %s: POP3 check passed for %s:%s: %s" % (self.job.get_job_id(), self.ip, self.port, result))
         self.data = result
         self.d.callback(self)
 
