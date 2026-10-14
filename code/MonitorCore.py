@@ -289,7 +289,7 @@ if __name__=="__main__":
     for dir in ("log", "raw", "sbe"):
         check_dir(dir)
     #log.startLogging(open('log/MonitorCore.log', 'w'))
-    syslog.startLogging(prefix="Scorebot")
+    #syslog.startLogging(prefix="Scorebot")
     logger.info("Starting Adjudicator")
     params = Parameters()
     jobs = Jobs()
