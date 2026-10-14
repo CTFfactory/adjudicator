@@ -6,6 +6,7 @@ from Jobs import Jobs
 import time
 import sys
 import re
+from logger import logger
 
 class GenClient(protocol.Protocol):
 
@@ -23,9 +24,9 @@ class GenClient(protocol.Protocol):
 
     def connectionMade(self):
         if self.job_id:
-            sys.stderr.write("Job %s: Made connection to %s:%s\n" % (self.job_id, self.factory.get_ip(), self.factory.get_port()))
+            logger.debug("Job %s: Made connection to %s:%s" % (self.job_id, self.factory.get_ip(), self.factory.get_port()))
         else:
-            sys.stderr.write("Made connection to %s:%s\n" % (self.factory.get_ip(), self.factory.get_port()))
+            logger.debug("Made connection to %s:%s" % (self.factory.get_ip(), self.factory.get_port()))
         reactor.callLater(self.factory.get_timeout(), self.TimedOut)
         #sys.stderr.write("Sending: %s\n" % self.request)
         if self.request:
@@ -66,7 +67,7 @@ class GenCoreFactory(protocol.ClientFactory):
 
     def startedConnecting(self, connector):
         if self.job:
-            sys.stderr.write("Job %s:  Starting connection\n" % self.job.get_job_id())
+            logger.debug("Job %s:  Starting connection" % self.job.get_job_id())
 
     def buildProtocol(self, addr):
         self.addr = addr
